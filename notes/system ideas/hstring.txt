@@ -1,0 +1,6 @@
+being able to use them at compile time would be really nice. could have a secondary structure that checks for equivalency and uses constexpr construction, but that's pretty much doing the same kind of branching that I'm trying to avoid with runtime values anyways.
+
+do other implementations allow for constexpr versions? how are these structured
+
+https://github.com/mattiasgustavsson/libs/blob/master/strpool.h#L85
+https://github.com/foonathan/string_id

@@ -1,0 +1,39 @@
+https://capnproto.org/cxx.html#dynamic-reflection
+
+https://github.com/preshing/FlexibleReflection/blob/part1/Main.cpp
+
+http://pfultz2.com/blog/2012/07/31/reflection-in-under-100-lines/
+
+https://www.rttr.org/faq
+
+https://github.com/cbeck88/visit_struct/blob/master/README.md
+
+https://github.com/HeliumProject/Core/tree/master/Source/Reflect
+
+https://sourceforge.net/projects/crd/files/latest/download
+
+http://www.garret.ru/lang.html
+
+http://www.enchantedage.com/cpp-reflection
+
+https://preshing.com/20180116/a-primitive-reflection-system-in-cpp-part-1/
+
+https://manu343726.github.io/siplasplas/doc/doxygen/master/examples_2reflection_2static_2serialization_8cpp-example.html
+
+http://onqtam.com/programming/2017-09-02-simple-cpp-reflection-with-cmake/
+
+https://github.com/felixguendling/cista/blob/master/include/cista/serialization.h
+
+// seems most straightforward so far
+http://donw.io/post/reflection-cpp-1/
+http://donw.io/post/reflection-cpp-2/
+
+
+initializing/calling a function on the objects
+
+https://stackoverflow.com/questions/22822836/type-switch-construct-in-c11
+
+adding function pointers to a list
+https://stackoverflow.com/questions/5019856/initialize-static-variables-in-c-class
+https://en.cppreference.com/w/cpp/language/aggregate_initialization
+

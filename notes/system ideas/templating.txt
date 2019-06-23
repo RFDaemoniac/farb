@@ -1,0 +1,3 @@
+https://github.com/pantor/inja
+
+but I would rather not serialize all relevant objects, just the ones that are being used. Which means parsing out paths instead
