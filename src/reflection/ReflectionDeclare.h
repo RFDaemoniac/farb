@@ -56,27 +56,23 @@ public:
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 };
 
+template <typename T>
+TypeInfo* GetTypeInfo(const T& obj)
+{
+	return obj.GetTypeInfo();
+}
+
+template <typename T>
+TypeInfo* GetTypeInfo()
+{
+	return &T::typeInfo;
+}
 
 struct ReflectionContext
 {
 	ReflectionContext* parentContext;
 	TypeInfo* typeInfo;
 	byte* object;
-};
-
-
-
-
-// should this really be handled like this?
-struct ReflectableObject
-{
-	virtual TypeInfo* GetTypeInfo() const;
-};
-
-struct ExampleReflectableObject : public ReflectableObject
-{
-	static TypeInfo* typeInfo;
-	virtual TypeInfo* GetTypeInfo() const override { return typeInfo; }
 };
 
 

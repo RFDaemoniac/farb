@@ -10,12 +10,6 @@ namespace Farb
 namespace Reflection
 {
 
-template <typename T>
-TypeInfo* GetTypeInfo(const T& obj)
-{
-	return obj.GetTypeInfo();
-}
-
 template<typename T>
 struct TypeInfoCustomLeaf : public TypeInfo
 {
@@ -129,16 +123,31 @@ struct TypeInfoTable : public TypeInfo
 	// rmf todo: @implement
 };
 
+template<typename T>
 struct TypeInfoStruct : public TypeInfo
 {
 	struct MemberInfo
 	{
 		HString name;
-		uint offset;
+		int T::* location;
 		TypeInfo* typeInfo;
+
+		MemberInfo(HString name, int T::* location, TypeInfo* typeInfo)
+			: name(name)
+			, location(location)
+			, typeInfo(typeInfo)
+		{}
 	};
 
 	std::vector<MemberInfo> vMembers;
+
+	TypeInfoStruct(
+		HString name,
+		TypeInfo* parentType,
+		std::vector<MemberInfo> members)
+		: TypeInfo(name, parentType)
+		, vMembers(members)
+	{}
 
 	virtual bool GetAtKey(
 		byte* obj,
@@ -146,14 +155,20 @@ struct TypeInfoStruct : public TypeInfo
 		TypeInfo* outInfo,
 		byte* outObj) const
 	{
+		T* t = reinterpret_cast<T*>(obj);
 		for (const auto & member : vMembers)
 		{
 			if (member.name == name)
 			{
-				outObj = obj + member.offset;
+				outObj = &(t->*member.location);
 				outInfo = member.typeInfo;
 				return true;
 			}
+		}
+
+		if (parentType != nullptr)
+		{
+			return parentType->GetAtKey(obj, name, outInfo, outObj);
 		}
 		return false;
 	}

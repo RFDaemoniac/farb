@@ -5,41 +5,11 @@
 
 #include "../RegisterTest.hpp"
 #include "../../src/reflection/ReflectionDefine.hpp"
+#include "TestReflectDefinitions.hpp"
 
 
 namespace Farb
 {
-
-namespace Tests
-{
-
-enum class ExampleEnum
-{
-	NegativeTwo = -2,
-	Zero = 0,
-	One = 1,
-	Two = 2
-};
-
-static Reflection::TypeInfoEnum<ExampleEnum> exampleEnumTypeInfo {
-	"ExampleEnum",
-	nullptr,
-	std::vector<std::pair <std::string, int> >{
-		{"NegativeTwo", -2},
-		{"Zero", 0},
-		{"One", 1},
-		{"Two", 2}
-	},
-};
-
-} // namespace Tests
-
-
-template <>
-Reflection::TypeInfo* Reflection::GetTypeInfo<Tests::ExampleEnum>(const Tests::ExampleEnum& obj)
-{
-	return &Tests::exampleEnumTypeInfo;
-}
 
 namespace Tests
 {
