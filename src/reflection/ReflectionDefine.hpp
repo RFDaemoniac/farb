@@ -1,6 +1,8 @@
 #ifndef FARB_REFLECTION_DEFINE_H
 #define FARB_REFLECTION_DEFINE_H
 
+#include <memory>
+
 #include "ReflectionDeclare.h"
 
 
@@ -14,55 +16,55 @@ template<typename T>
 struct TypeInfoCustomLeaf : public TypeInfo
 {
 protected:
-	bool (T::*fAssignBool)(bool);
-	bool (T::*fAssignUInt)(uint);
-	bool (T::*fAssignInt)(int);
-	bool (T::*fAssignFloat)(float);
-	bool (T::*fAssignString)(std::string);
+	bool (T::*pAssignBool)(bool);
+	bool (T::*pAssignUInt)(uint);
+	bool (T::*pAssignInt)(int);
+	bool (T::*pAssignFloat)(float);
+	bool (T::*pAssignString)(std::string);
 
 public:
 	TypeInfoCustomLeaf()
-		: fAssignBool(nullptr)
-		, fAssignUInt(nullptr)
-		, fAssignInt(nullptr)
-		, fAssignFloat(nullptr)
-		, fAssignString(nullptr)
+		: pAssignBool(nullptr)
+		, pAssignUInt(nullptr)
+		, pAssignInt(nullptr)
+		, pAssignFloat(nullptr)
+		, pAssignString(nullptr)
 	{
 	}
 
 	virtual bool AssignBool(byte* obj, bool value) const override
 	{
-		if (fAssignBool == nullptr) { return false; }
+		if (pAssignBool == nullptr) { return false; }
 		T* t = reinterpret_cast<T*>(obj);
-		return (t->*fAssignBool)(value);
+		return (t->*pAssignBool)(value);
 	}
 
 	virtual bool AssignUInt(byte* obj, uint value) const override
 	{
-		if (fAssignUInt == nullptr) { return false; }
+		if (pAssignUInt == nullptr) { return false; }
 		T* t = reinterpret_cast<T*>(obj);
-		return (t->*fAssignUInt)(value);
+		return (t->*pAssignUInt)(value);
 	}
 
 	virtual bool AssignInt(byte* obj, int value) const override
 	{
-		if (fAssignInt == nullptr) { return false; }
+		if (pAssignInt == nullptr) { return false; }
 		T* t = reinterpret_cast<T*>(obj);
-		return (t->*fAssignInt)(value);
+		return (t->*pAssignInt)(value);
 	}
 
 	virtual bool AssignFloat(byte* obj, float value) const override
 	{
-		if (fAssignFloat == nullptr) { return false; }
+		if (pAssignFloat == nullptr) { return false; }
 		T* t = reinterpret_cast<T*>(obj);
-		return (t->*fAssignFloat)(value);
+		return (t->*pAssignFloat)(value);
 	}
 
 	virtual bool AssignString(byte* obj, std::string value) const override
 	{
-		if (fAssignString == nullptr) { return false; }
+		if (pAssignString == nullptr) { return false; }
 		T* t = reinterpret_cast<T*>(obj);
-		return (t->*fAssignString)(value);
+		return (t->*pAssignString)(value);
 	}
 };
 
@@ -74,8 +76,8 @@ protected:
 
 public:
 
-	TypeInfoEnum(HString name, TypeInfo* parent, std::vector<std::pair<HString, int> > vEnumValues)
-		: TypeInfo(name, parent)
+	TypeInfoEnum(HString name, std::vector<std::pair<HString, int> > vEnumValues)
+		: TypeInfo(name)
 		, vValues(vEnumValues)
 	{
 
@@ -114,7 +116,28 @@ public:
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
-	// rmf todo: @implement
+	virtual bool GetAtIndex(
+		byte* obj,
+		int index,
+		TypeInfo* outInfo,
+		byte* outObj) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		if (t->size() <= index)
+		{
+			return false;
+		}
+		TVal* tval = reinterpret_cast<T*>(&t[index]);
+		outObj = tval;
+		outInfo = GetTypeInfo(*tval);
+		return true;
+	}
+
+	virtual bool PushBackDefault(byte* obj) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		t->push_back(TVal());
+	}
 };
 
 template<typename T, typename TKey, typename TVal>
@@ -124,30 +147,62 @@ struct TypeInfoTable : public TypeInfo
 };
 
 template<typename T>
+struct MemberInfo
+{
+	HString name;
+	TypeInfo* typeInfo;
+
+	MemberInfo(HString name, TypeInfo* typeInfo)
+		: name(name)
+		, typeInfo(typeInfo)
+	{}
+
+	virtual ~MemberInfo() {}
+
+	virtual byte* GetLocation(T* t) const = 0;
+};
+
+template<typename T, typename TMem>
+struct MemberInfoTyped : public MemberInfo<T>
+{
+	TMem T::* location;
+
+	MemberInfoTyped(HString name, TMem T::* location)
+		: MemberInfo<T>(name, GetTypeInfo<TMem>())
+		, location(location)
+	{}
+
+	virtual byte* GetLocation(T* t) const override
+	{
+		return reinterpret_cast<byte*>(&(t->*location));
+	}
+};
+
+template<typename T>
 struct TypeInfoStruct : public TypeInfo
 {
-	struct MemberInfo
-	{
-		HString name;
-		int T::* location;
-		TypeInfo* typeInfo;
 
-		MemberInfo(HString name, int T::* location, TypeInfo* typeInfo)
-			: name(name)
-			, location(location)
-			, typeInfo(typeInfo)
-		{}
-	};
-
-	std::vector<MemberInfo> vMembers;
+	// rmf note: at first all TypeInfo would have the opportunity for a parent type
+	// but I figured it was mostly unecessary for the others. Feel free to change in the future.
+	TypeInfo* parentType;
+	std::vector<MemberInfo<T>*> vMembers;
 
 	TypeInfoStruct(
 		HString name,
 		TypeInfo* parentType,
-		std::vector<MemberInfo> members)
-		: TypeInfo(name, parentType)
+		std::vector<MemberInfo<T>*> members)
+		: TypeInfo(name)
+		, parentType(parentType)
 		, vMembers(members)
 	{}
+
+	~TypeInfoStruct()
+	{
+		for (auto pMember : vMembers)
+		{
+			delete pMember;
+		}
+	}
 
 	virtual bool GetAtKey(
 		byte* obj,
@@ -156,12 +211,12 @@ struct TypeInfoStruct : public TypeInfo
 		byte* outObj) const
 	{
 		T* t = reinterpret_cast<T*>(obj);
-		for (const auto & member : vMembers)
+		for (auto member : vMembers)
 		{
-			if (member.name == name)
+			if (member->name == name)
 			{
-				outObj = &(t->*member.location);
-				outInfo = member.typeInfo;
+				outObj = member->GetLocation(t);
+				outInfo = member->typeInfo;
 				return true;
 			}
 		}

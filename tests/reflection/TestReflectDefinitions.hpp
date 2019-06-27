@@ -1,6 +1,7 @@
 #ifndef TEST_REFLECTION_DEFINITIONS_H
 #define TEST_REFLECTION_DEFINITIONS_H
 
+#include "../../src/reflection/ReflectionDeclare.h"
 #include "../../src/reflection/ReflectionDefine.hpp"
 
 
@@ -20,9 +21,8 @@ enum class ExampleEnum
 	Two = 2
 };
 
-static Reflection::TypeInfoEnum<ExampleEnum> exampleEnumTypeInfo {
+static TypeInfoEnum<ExampleEnum> exampleEnumTypeInfo {
 	"ExampleEnum",
-	nullptr,
 	std::vector<std::pair <std::string, int> >{
 		{"NegativeTwo", -2},
 		{"Zero", 0},
@@ -30,6 +30,20 @@ static Reflection::TypeInfoEnum<ExampleEnum> exampleEnumTypeInfo {
 		{"Two", 2}
 	},
 };
+
+} // namespace Tests
+
+using namespace Tests;
+
+template <>
+TypeInfo* Reflection::GetTypeInfo<ExampleEnum>()
+{
+	return &exampleEnumTypeInfo;
+}
+
+
+namespace Tests
+{
 
 struct ExampleBaseStruct
 {
@@ -41,15 +55,15 @@ struct ExampleBaseStruct
 	virtual TypeInfo* GetTypeInfo() const { return &typeInfo; }
 };
 
-ExampleBaseStruct::typeInfo = TypeInfoStruct {
+TypeInfoStruct<ExampleBaseStruct> ExampleBaseStruct::typeInfo = TypeInfoStruct<ExampleBaseStruct> {
 	"ExampleBaseStruct",
 	nullptr,
-	std::vector<TypeInfoStruct::MemberInfo> >{
-		{"e1", &ExampleBaseStruct::e1, GetTypeInfo<decltype(ExampleBaseStruct::e1)>()},
-		{"e2", &ExampleBaseStruct::e2, GetTypeInfo<decltype(ExampleBaseStruct::e2)>()}
+	std::vector<MemberInfo<ExampleBaseStruct>*> {
+		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::e1)> {"e1", &ExampleBaseStruct::e1},
+		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::e1)> {"e2", &ExampleBaseStruct::e2}
 	},
 };
-
+/*
 struct ExampleDerivedStruct : public ExampleBaseStruct
 {
 	ExampleEnum e3;
@@ -61,28 +75,14 @@ struct ExampleDerivedStruct : public ExampleBaseStruct
 
 ExampleDerivedStruct::typeInfo {
 	"ExampleDerivedStruct",
-	nullptr,
-	std::vector<TypeInfoStruct<ExampleDerivedStruct>::MemberInfo> > {
-		{"e3", &ExampleDerivedStruct::e3, GetTypeInfo<decltype(ExampleBaseStruct::e3)>()},
-		{"e4", &ExampleDerivedStruct::e4, GetTypeInfo<decltype(ExampleBaseStruct::e4)>()}
+	GetTypeInfo<ExampleBaseStruct>(),
+	std::vector<std::shared_ptr<TypeInfoStruct<ExampleDerivedStruct>::MemberInfo> > {
+		new TypeInfoStruct<ExampleDerivedStruct>::MemberInfoTyped {"e3", &ExampleDerivedStruct::e3, Reflection::GetTypeInfo<decltype(ExampleDerivedStruct::e3)>()},
+		new TypeInfoStruct<ExampleDerivedStruct>::MemberInfoTyped {"e4", &ExampleDerivedStruct::e4, Reflection::GetTypeInfo<decltype(ExampleDerivedStruct::e4)>()}
 	}
 };
-
+*/
 } // namespace Tests
-
-using namespace Tests;
-
-template <>
-TypeInfo* GetTypeInfo<ExampleEnum>(const ExampleEnum& obj)
-{
-	return &exampleEnumTypeInfo;
-}
-
-template <>
-TypeInfo* GetTypeInfo<ExampleEnum>()
-{
-	return &exampleEnumTypeInfo;
-}
 
 } // namespace Farb
 
