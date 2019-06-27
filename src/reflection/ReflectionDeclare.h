@@ -17,6 +17,15 @@ using byte = unsigned char;
 namespace Reflection
 {
 
+struct TypeInfo;
+
+struct ReflectionContext
+{
+	ReflectionContext* parentContext;
+	TypeInfo* typeInfo;
+	byte* object;
+};
+
 struct TypeInfo
 {
 protected:
@@ -35,23 +44,39 @@ public:
 	virtual bool AssignFloat(byte* obj, float value) const { return false; }
 	virtual bool AssignString(byte* obj, std::string value) const { return false; }
 
-	virtual bool GetAtKey(
+
+	struct GetAtResult
+	{
+		bool success;
+		TypeInfo* typeInfo;
+		byte* obj;
+
+		GetAtResult()
+			: success(false)
+			, typeInfo(nullptr)
+			, obj(nullptr)
+		{ }
+
+		GetAtResult(TypeInfo* typeInfo, byte* obj)
+			: success(true)
+			, typeInfo(typeInfo)
+			, obj(obj)
+		{ }
+	};
+
+	virtual GetAtResult GetAtKey(
 		byte* obj,
-		HString name,
-		TypeInfo* outInfo,
-		byte* outObj) const
-	{ return false; }
+		HString name) const
+	{ return GetAtResult(); }
 
 	virtual bool InsertKey(byte* obj, HString name) const { return false; }
 
 	// if index is < length, returns an already existing value
 	// if index is > length, fails
-	virtual bool GetAtIndex(
+	virtual GetAtResult GetAtIndex(
 		byte* obj,
-		int index,
-		TypeInfo* outInfo,
-		byte* outObj) const
-	{ return false; }
+		int index) const
+	{ return GetAtResult(); }
 
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 };
@@ -91,13 +116,6 @@ TypeInfo* GetTypeInfo(const T& obj)
 {
 	return GetTypeInfo<T>();
 }
-
-struct ReflectionContext
-{
-	ReflectionContext* parentContext;
-	TypeInfo* typeInfo;
-	byte* object;
-};
 
 
 } // namespace Reflection

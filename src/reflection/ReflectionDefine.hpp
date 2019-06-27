@@ -2,6 +2,7 @@
 #define FARB_REFLECTION_DEFINE_H
 
 #include <memory>
+#include <iostream>
 
 #include "ReflectionDeclare.h"
 
@@ -116,21 +117,17 @@ public:
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
-	virtual bool GetAtIndex(
+	virtual GetAtResult GetAtIndex(
 		byte* obj,
-		int index,
-		TypeInfo* outInfo,
-		byte* outObj) const override
+		int index) const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		if (t->size() <= index)
 		{
-			return false;
+			return GetAtResult();
 		}
-		TVal* tval = reinterpret_cast<T*>(&t[index]);
-		outObj = tval;
-		outInfo = GetTypeInfo(*tval);
-		return true;
+		TVal* pVal = &((*t)[index]);
+		return GetAtResult(GetTypeInfo(*pVal), reinterpret_cast<byte*>(pVal));
 	}
 
 	virtual bool PushBackDefault(byte* obj) const override
@@ -174,7 +171,8 @@ struct MemberInfoTyped : public MemberInfo<T>
 
 	virtual byte* GetLocation(T* t) const override
 	{
-		return reinterpret_cast<byte*>(&(t->*location));
+		TMem* pMem = &(t->*location);
+		return reinterpret_cast<byte*>(pMem);
 	}
 };
 
@@ -204,28 +202,24 @@ struct TypeInfoStruct : public TypeInfo
 		}
 	}
 
-	virtual bool GetAtKey(
+	virtual GetAtResult GetAtKey(
 		byte* obj,
-		HString name,
-		TypeInfo* outInfo,
-		byte* outObj) const
+		HString name) const
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		for (auto member : vMembers)
 		{
 			if (member->name == name)
 			{
-				outObj = member->GetLocation(t);
-				outInfo = member->typeInfo;
-				return true;
+				return GetAtResult(member->typeInfo, member->GetLocation(t));
 			}
 		}
 
 		if (parentType != nullptr)
 		{
-			return parentType->GetAtKey(obj, name, outInfo, outObj);
+			return parentType->GetAtKey(obj, name);
 		}
-		return false;
+		return GetAtResult();
 	}
 };
 

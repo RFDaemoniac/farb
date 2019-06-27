@@ -51,6 +51,11 @@ struct ExampleBaseStruct
 	ExampleEnum e1;
 	ExampleEnum e2;
 
+	ExampleBaseStruct()
+		: e1(ExampleEnum::One)
+		, e2(ExampleEnum::Two)
+	{}
+
 	static TypeInfoStruct<ExampleBaseStruct> typeInfo;
 	virtual TypeInfo* GetTypeInfo() const { return &typeInfo; }
 };
