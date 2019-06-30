@@ -4,7 +4,7 @@
 #include "./reflection/TestReflectEnum.hpp"
 #include "./reflection/TestReflectStruct.hpp"
 /*
-g++ -std=c++11 RunTests.cpp
+g++ -std=c++11 -Wfatal-errors RunTests.cpp
 */
 
 using namespace Farb::Tests;

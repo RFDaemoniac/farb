@@ -21,27 +21,23 @@ class TestReflectStruct : public ITest
 public:
 	virtual bool RunTests() const override
 	{
-		ExampleBaseStruct e;
-		ExampleEnum ee;
-		char* pMembere1 = static_cast<char*>(static_cast<void*>(&(e.e1)));
-		byte* pStruct = reinterpret_cast<byte*>(&e);
-		assert(e.e1 == ExampleEnum::One);
-		assert(e.e2 == ExampleEnum::Two);
+		ExampleBaseStruct s;
+		ReflectionObject sReflect = ReflectionObject::Construct(s);
+		assert(s.e1 == ExampleEnum::One);
+		assert(s.e2 == ExampleEnum::Two);
 
-		TypeInfo* typeInfoStruct = GetTypeInfo(e);
-		TypeInfo* typeInfoMember = nullptr;
-		byte* pMember = nullptr;
+		ReflectionObject member = FARB_CHECK(
+			sReflect.GetAtKey("e1"),
+			"reflect struct get member");
+		bool success = member.AssignString("Zero");
 
-		auto result = typeInfoStruct->GetAtKey(pStruct, "e1");
-		pMember = result.obj;
-		typeInfoMember = result.typeInfo;
-		farb_print(result.success, "reflect struct get member");
-		assert(result.success);
-		assert(pMember != nullptr);
-		assert(typeInfoMember != nullptr);
-		bool success = typeInfoMember->AssignString(pMember, "Zero");
-		farb_print(success && e.e1 == ExampleEnum::Zero, "reflect struct assign to member enum");
-		assert(success && e.e1 == ExampleEnum::Zero);
+		farb_print(success && s.e1 == ExampleEnum::Zero, "reflect struct assign to member enum");
+		assert(success && s.e1 == ExampleEnum::Zero);
+
+		FARB_ASSERT_ERROR(
+			sReflect.GetAtKey("nonexistent member"),
+			"reflect struct get nonexistent member");
+
 		return true;
 	}
 };

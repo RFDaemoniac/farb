@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <iostream>
+#include <limits.h>
 
 #include "ReflectionDeclare.h"
 
@@ -98,6 +99,15 @@ public:
 		return false;
 	}
 
+	virtual bool AssignUInt(byte* obj, uint value) const override
+	{
+		if (value > INT_MAX)
+		{
+			return false;
+		}
+		return AssignInt(obj, static_cast<int>(value));
+	}
+
 	virtual bool AssignString(byte* obj, std::string value) const override
 	{
 		HString sValue = value;
@@ -117,23 +127,29 @@ public:
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
-	virtual GetAtResult GetAtIndex(
+	virtual ErrorOr<ReflectionObject> GetAtIndex(
 		byte* obj,
 		int index) const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		if (t->size() <= index)
 		{
-			return GetAtResult();
+			return Error(
+				name
+				+ " array GetAtIndex "
+				+ std::to_string(index)
+				+ " is out of bounds, "
+				+ std::to_string(t->size())
+				+ ".");
 		}
-		TVal* pVal = &((*t)[index]);
-		return GetAtResult(GetTypeInfo(*pVal), reinterpret_cast<byte*>(pVal));
+		return ReflectionObject::Construct((*t)[index]);
 	}
 
 	virtual bool PushBackDefault(byte* obj) const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		t->push_back(TVal());
+		return true;
 	}
 };
 
@@ -144,8 +160,13 @@ struct TypeInfoTable : public TypeInfo
 };
 
 template<typename T>
+struct TypeInfoStruct;
+
+template<typename T>
 struct MemberInfo
 {
+	friend class TypeInfoStruct<T>;
+protected:
 	HString name;
 	TypeInfo* typeInfo;
 
@@ -154,16 +175,20 @@ struct MemberInfo
 		, typeInfo(typeInfo)
 	{}
 
-	virtual ~MemberInfo() {}
+public:
+	virtual ~MemberInfo() { }
 
+public:
 	virtual byte* GetLocation(T* t) const = 0;
 };
 
 template<typename T, typename TMem>
 struct MemberInfoTyped : public MemberInfo<T>
 {
+protected:
 	TMem T::* location;
 
+public:
 	MemberInfoTyped(HString name, TMem T::* location)
 		: MemberInfo<T>(name, GetTypeInfo<TMem>())
 		, location(location)
@@ -202,16 +227,16 @@ struct TypeInfoStruct : public TypeInfo
 		}
 	}
 
-	virtual GetAtResult GetAtKey(
+	virtual ErrorOr<ReflectionObject> GetAtKey(
 		byte* obj,
-		HString name) const
+		HString name) const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		for (auto member : vMembers)
 		{
 			if (member->name == name)
 			{
-				return GetAtResult(member->typeInfo, member->GetLocation(t));
+				return ReflectionObject(member->GetLocation(t), member->typeInfo);
 			}
 		}
 
@@ -219,7 +244,11 @@ struct TypeInfoStruct : public TypeInfo
 		{
 			return parentType->GetAtKey(obj, name);
 		}
-		return GetAtResult();
+		return Error(
+			this->name
+			+ " struct GetAtKey "
+			+ name
+			+ " failed. No member exists with that name.");
 	}
 };
 

@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "../errors/ErrorOr.hpp"
+
 namespace Farb
 {
 
@@ -19,15 +21,45 @@ namespace Reflection
 
 struct TypeInfo;
 
-struct ReflectionContext
+struct ReflectionObject
 {
-	ReflectionContext* parentContext;
+	byte* location;
 	TypeInfo* typeInfo;
-	byte* object;
+
+	ReflectionObject()
+		: location(nullptr)
+		, typeInfo(nullptr)
+	{ }
+
+	ReflectionObject(byte* location, TypeInfo* typeInfo)
+		: location(location)
+		, typeInfo(typeInfo)
+	{ }
+
+	ReflectionObject(const ReflectionObject& other)
+		: location(other.location)
+		, typeInfo(other.typeInfo)
+	{ }
+
+	template<typename T>
+	static ReflectionObject Construct(T& object);
+
+	bool AssignBool(bool value) const;
+	bool AssignUInt(uint value) const;
+	bool AssignInt(int value) const;
+	bool AssignFloat(float value) const;
+	bool AssignString(std::string value) const;
+
+	ErrorOr<ReflectionObject> GetAtKey(HString name) const;
+	bool InsertKey(HString name) const;
+
+	ErrorOr<ReflectionObject> GetAtIndex(int index) const;
+	bool PushBackDefault() const;
 };
 
 struct TypeInfo
-{
+{	
+	friend class ReflectionObject;
 protected:
 	HString name;
 
@@ -44,39 +76,21 @@ public:
 	virtual bool AssignFloat(byte* obj, float value) const { return false; }
 	virtual bool AssignString(byte* obj, std::string value) const { return false; }
 
-
-	struct GetAtResult
-	{
-		bool success;
-		TypeInfo* typeInfo;
-		byte* obj;
-
-		GetAtResult()
-			: success(false)
-			, typeInfo(nullptr)
-			, obj(nullptr)
-		{ }
-
-		GetAtResult(TypeInfo* typeInfo, byte* obj)
-			: success(true)
-			, typeInfo(typeInfo)
-			, obj(obj)
-		{ }
-	};
-
-	virtual GetAtResult GetAtKey(
+	virtual ErrorOr<ReflectionObject> GetAtKey(
 		byte* obj,
 		HString name) const
-	{ return GetAtResult(); }
+	{
+		return Error(name + " GetAtKey not impelmented.");
+	}
 
 	virtual bool InsertKey(byte* obj, HString name) const { return false; }
 
-	// if index is < length, returns an already existing value
-	// if index is > length, fails
-	virtual GetAtResult GetAtIndex(
+	virtual ErrorOr<ReflectionObject> GetAtIndex(
 		byte* obj,
 		int index) const
-	{ return GetAtResult(); }
+	{
+		return Error(name + " GetAtIndex not impelmented.");
+	}
 
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 };
@@ -116,6 +130,66 @@ TypeInfo* GetTypeInfo(const T& obj)
 {
 	return GetTypeInfo<T>();
 }
+
+template<typename T>
+ReflectionObject ReflectionObject::Construct(T& object)
+{
+	return ReflectionObject(
+		reinterpret_cast<byte*>(&object),
+		GetTypeInfo(object));
+}
+
+bool ReflectionObject::AssignBool(bool value) const
+{
+	return typeInfo->AssignBool(location, value);
+}
+
+bool ReflectionObject::AssignUInt(uint value) const
+{
+	return typeInfo->AssignUInt(location, value);
+}
+
+bool ReflectionObject::AssignInt(int value) const
+{
+	return typeInfo->AssignInt(location, value);
+}
+
+bool ReflectionObject::AssignFloat(float value) const
+{
+	return typeInfo->AssignFloat(location, value);
+}
+
+bool ReflectionObject::AssignString(std::string value) const
+{
+	return typeInfo->AssignString(location, value);
+}
+
+ErrorOr<ReflectionObject> ReflectionObject::GetAtKey(HString name) const
+{
+	return typeInfo->GetAtKey(location, name);
+}
+
+bool ReflectionObject::InsertKey(HString name) const
+{
+	return typeInfo->InsertKey(location, name);
+}
+
+ErrorOr<ReflectionObject> ReflectionObject::GetAtIndex(int index) const
+{
+	return typeInfo->GetAtIndex(location, index);
+}
+
+bool ReflectionObject::PushBackDefault() const
+{
+	return typeInfo->PushBackDefault(location);
+}
+
+struct ReflectionContext
+{
+	ReflectionContext* parentContext;
+	TypeInfo* typeInfo;
+	byte* object;
+};
 
 
 } // namespace Reflection

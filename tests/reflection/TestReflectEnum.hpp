@@ -10,6 +10,7 @@
 
 namespace Farb
 {
+using namespace Reflection;
 
 namespace Tests
 {
@@ -20,12 +21,12 @@ public:
 	virtual bool RunTests() const override
 	{
 		ExampleEnum e = ExampleEnum::NegativeTwo;
-		Reflection::TypeInfo* typeInfo = Reflection::GetTypeInfo<ExampleEnum>(e);
+		ReflectionObject eReflect = ReflectionObject::Construct(e);
 		assert(e == ExampleEnum::NegativeTwo);
-		bool success = typeInfo->AssignString(reinterpret_cast<byte*>(&e), "One");
+		bool success = eReflect.AssignString("One");
 		farb_print(success && e == ExampleEnum::One, "reflect enum assign string");
 		assert(success && e == ExampleEnum::One);
-		success = typeInfo->AssignString(reinterpret_cast<byte*>(&e), "Invalid Value");
+		success = eReflect.AssignString("Invalid Value");
 		farb_print(!success && e == ExampleEnum::One, "reflect enum assign invalid string");
 		assert(!success && e == ExampleEnum::One);
 		return true;

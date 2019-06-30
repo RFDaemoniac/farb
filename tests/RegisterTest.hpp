@@ -5,11 +5,46 @@
 #include <iostream>
 #include <string>
 
+#include "../src/errors/ErrorOr.hpp"
+
 namespace Farb
 {
 
+
 namespace Tests
 {
+
+#define FARB_CHECK(result, sTestName) \
+	({ \
+		auto r = result; \
+		auto s = sTestName; \
+		farb_print(r, s); \
+		assert(!r.IsError()); \
+		r.GetValue(); \
+	})
+
+#define FARB_ASSERT_ERROR(result, sTestName) \
+	({ \
+		auto r = result; \
+		auto s = sTestName; \
+		farb_print(r.IsError(), s); \
+		assert(r.IsError()); \
+		r.GetError(); \
+	})
+
+template<typename T>
+static inline void farb_print (ErrorOr<T>& result, std::string sTestName)
+{
+	if (result.IsError())
+	{
+		std::cout << "## FAIL ## -- " << sTestName << std::endl;
+		result.GetError().Log();
+	}
+	else
+	{
+		std::cout << "PASS -- " << sTestName << std::endl;
+	}
+}
 
 static inline bool farb_print (bool success, std::string sTestName)
 {
