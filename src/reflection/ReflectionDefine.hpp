@@ -4,6 +4,9 @@
 #include <memory>
 #include <iostream>
 #include <limits.h>
+#include <type_traits>
+#include <typeindex>
+#include <unordered_map>
 
 #include "ReflectionDeclare.h"
 
@@ -15,58 +18,187 @@ namespace Reflection
 {
 
 template<typename T>
+struct AssignFunction
+{
+	template<typename TArg>
+	bool Call(T& object, TArg value) const;
+
+	virtual ~AssignFunction() = default;
+};
+
+template<typename T, typename TArg>
+struct AssignFunctionTyped : public AssignFunction<T>
+{
+	static_assert(
+		std::is_same<TArg, bool>::value
+		|| std::is_same<TArg, uint>::value
+		|| std::is_same<TArg, int>::value
+		|| std::is_same<TArg, float>::value
+		|| std::is_same<TArg, std::string>::value,
+		"AssignFunctionTyped can only accept values of type bool, uint, int, float, or std::string");
+	friend class AssignFunction<T>;
+protected:
+	bool (*pAssign)(T&, TArg);
+
+public:
+	AssignFunctionTyped(bool (*pAssign)(T&, TArg))
+		: pAssign(pAssign)
+	{ }
+};
+
+template<typename T, typename TArg>
+struct AssignFunctionTypedMember : public AssignFunction<T>
+{
+	static_assert(
+		std::is_same<TArg, bool>::value
+		|| std::is_same<TArg, uint>::value
+		|| std::is_same<TArg, int>::value
+		|| std::is_same<TArg, float>::value
+		|| std::is_same<TArg, std::string>::value,
+		"AssignFunctionTypedMember can only accept values of type bool, uint, int, float, or std::string");
+	friend class AssignFunction<T>;
+protected:
+	bool (T::*pAssign)(TArg);
+
+public:
+	AssignFunctionTypedMember(bool (T::*pAssign)(T&, TArg))
+		: pAssign(pAssign)
+	{ }
+};
+
+template<typename T>
+template<typename TArg>
+bool AssignFunction<T>::Call(T& object, TArg value) const
+{
+	if constexpr (!std::is_fundamental<T>::value)
+	{
+		auto pAssignMemberWrapper = dynamic_cast<const AssignFunctionTypedMember<T, TArg>*>(this);
+		if (pAssignMemberWrapper != nullptr)
+		{
+			auto pAssignMember = pAssignMemberWrapper->pAssign;
+			return (object.*pAssignMember)(value);
+		}
+	}
+	auto pAssignWrapper = dynamic_cast<const AssignFunctionTyped<T, TArg>*>(this);
+	if (pAssignWrapper != nullptr)
+	{
+		return pAssignWrapper->pAssign(object, value);
+	}
+	return false;
+}
+
+template<typename T>
+struct ExtractFunctionTypes
+{ };
+
+template<typename C, typename R, typename A>
+struct ExtractFunctionTypes<R(C::*)(A)>
+{
+	using IsMember = std::true_type;
+	using Class = C;
+	using Return = R;
+	using Param = A;
+};
+
+template<typename C, typename R, typename A>
+struct ExtractFunctionTypes<R(*)(C&, A)>
+{
+	using IsMember = std::false_type;
+	using Class = C;
+	using Return = R;
+	using Param = A;
+};
+
+template<typename T>
 struct TypeInfoCustomLeaf : public TypeInfo
 {
 protected:
-	bool (T::*pAssignBool)(bool);
-	bool (T::*pAssignUInt)(uint);
-	bool (T::*pAssignInt)(int);
-	bool (T::*pAssignFloat)(float);
-	bool (T::*pAssignString)(std::string);
+	std::unordered_map<std::type_index, std::shared_ptr<AssignFunction <T> > > tpAssignFunctions;
 
 public:
-	TypeInfoCustomLeaf()
-		: pAssignBool(nullptr)
-		, pAssignUInt(nullptr)
-		, pAssignInt(nullptr)
-		, pAssignFloat(nullptr)
-		, pAssignString(nullptr)
+	template <typename ... TArgs>
+	static TypeInfoCustomLeaf&& Construct(HString name, TArgs ... args)
 	{
+		auto leafTypeInfo = TypeInfoCustomLeaf(name);
+		leafTypeInfo.RegisterAssignFunctions(args...);
+		return std::move(leafTypeInfo);
 	}
 
 	virtual bool AssignBool(byte* obj, bool value) const override
 	{
-		if (pAssignBool == nullptr) { return false; }
-		T* t = reinterpret_cast<T*>(obj);
-		return (t->*pAssignBool)(value);
+		return Assign(obj, value);
 	}
 
 	virtual bool AssignUInt(byte* obj, uint value) const override
 	{
-		if (pAssignUInt == nullptr) { return false; }
-		T* t = reinterpret_cast<T*>(obj);
-		return (t->*pAssignUInt)(value);
+		return Assign(obj, value);
 	}
 
 	virtual bool AssignInt(byte* obj, int value) const override
 	{
-		if (pAssignInt == nullptr) { return false; }
-		T* t = reinterpret_cast<T*>(obj);
-		return (t->*pAssignInt)(value);
+		return Assign(obj, value);
 	}
 
 	virtual bool AssignFloat(byte* obj, float value) const override
 	{
-		if (pAssignFloat == nullptr) { return false; }
-		T* t = reinterpret_cast<T*>(obj);
-		return (t->*pAssignFloat)(value);
+		return Assign(obj, value);
 	}
 
 	virtual bool AssignString(byte* obj, std::string value) const override
 	{
-		if (pAssignString == nullptr) { return false; }
+		return Assign(obj, value);
+	}
+
+protected:
+	TypeInfoCustomLeaf(HString name)
+		: TypeInfo(name)
+		, tpAssignFunctions()
+	{ }
+
+	template <typename TArg>
+	bool Assign(byte* obj, TArg value) const
+	{
+		auto index = std::type_index(typeid(TArg));
+		const auto iter = tpAssignFunctions.find(index);
+		if (iter == tpAssignFunctions.end())
+		{
+			// we do not have an assign function that takes this type
+			return false;
+		}
 		T* t = reinterpret_cast<T*>(obj);
-		return (t->*pAssignString)(value);
+		return iter->second->Call(*t, value);
+	}
+
+private:
+	template <typename TFunc>
+	void RegisterAssignFunctions(TFunc pAssign)
+	{
+		using TArg = typename ExtractFunctionTypes<TFunc>::Param;
+		if constexpr (ExtractFunctionTypes<TFunc>::IsMember::value)
+		{
+			using C = typename ExtractFunctionTypes<TFunc>::Class;
+			static_assert(
+				std::is_same<T, C>::value,
+				"member function for TypeInfoCustomLeaf belongs to another class");
+			auto index = std::type_index(typeid(TArg));
+			tpAssignFunctions.emplace(
+				index,
+				new AssignFunctionTypedMember<T, TArg>(pAssign));
+		}
+		else
+		{
+			auto index = std::type_index(typeid(TArg));
+			tpAssignFunctions.emplace(
+				index,
+				new AssignFunctionTyped<T, TArg>(pAssign));
+		}
+	}
+
+	template <typename TFunc, typename ... Rest>
+	void RegisterAssignFunctions(TFunc pAssign, Rest ... rest)
+	{
+		RegisterAssignFunctions(pAssign);
+		RegisterAssignFunctions(rest...);
 	}
 };
 
@@ -127,6 +259,11 @@ public:
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
+	// rmf todo: @implement an array of pointers to objects that have derived types
+	// will be a little trickier to set up when to create something and what to create
+	// if copied/inherited/included you can just point to the same object
+	// until we overwrite a different key, then you need to new and use the copy constructor
+	// but that logic should be in the deserialization, not in reflection
 	virtual ErrorOr<ReflectionObject> GetAtIndex(
 		byte* obj,
 		int index) const override

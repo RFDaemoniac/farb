@@ -3,6 +3,7 @@
 
 #include "../../src/reflection/ReflectionDeclare.h"
 #include "../../src/reflection/ReflectionDefine.hpp"
+#include "../../src/reflection/ReflectionBasics.hpp"
 
 
 namespace Farb
@@ -49,11 +50,11 @@ struct ExampleBaseStruct
 {
 	// rmf todo: additional member types
 	ExampleEnum e1;
-	ExampleEnum e2;
+	int i2;
 
 	ExampleBaseStruct()
 		: e1(ExampleEnum::One)
-		, e2(ExampleEnum::Two)
+		, i2(2)
 	{}
 
 	static TypeInfoStruct<ExampleBaseStruct> typeInfo;
@@ -65,28 +66,29 @@ TypeInfoStruct<ExampleBaseStruct> ExampleBaseStruct::typeInfo = TypeInfoStruct<E
 	nullptr,
 	std::vector<MemberInfo<ExampleBaseStruct>*> {
 		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::e1)> {"e1", &ExampleBaseStruct::e1},
-		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::e1)> {"e2", &ExampleBaseStruct::e2}
+		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::i2)> {"i2", &ExampleBaseStruct::i2}
 	},
 };
-/*
+
 struct ExampleDerivedStruct : public ExampleBaseStruct
 {
 	ExampleEnum e3;
-	ExampleEnum e4;
+	int i4;
 
 	static TypeInfoStruct<ExampleDerivedStruct> typeInfo;
-	virtual TypeInfo* GetTypeInfo() const override { return typeInfo; }
+	virtual TypeInfo* GetTypeInfo() const override { return &typeInfo; }
 };
 
-ExampleDerivedStruct::typeInfo {
+TypeInfoStruct<ExampleDerivedStruct> ExampleDerivedStruct::typeInfo {
 	"ExampleDerivedStruct",
-	GetTypeInfo<ExampleBaseStruct>(),
-	std::vector<std::shared_ptr<TypeInfoStruct<ExampleDerivedStruct>::MemberInfo> > {
-		new TypeInfoStruct<ExampleDerivedStruct>::MemberInfoTyped {"e3", &ExampleDerivedStruct::e3, Reflection::GetTypeInfo<decltype(ExampleDerivedStruct::e3)>()},
-		new TypeInfoStruct<ExampleDerivedStruct>::MemberInfoTyped {"e4", &ExampleDerivedStruct::e4, Reflection::GetTypeInfo<decltype(ExampleDerivedStruct::e4)>()}
+	Reflection::GetTypeInfo<ExampleBaseStruct>(),
+	std::vector<MemberInfo<ExampleDerivedStruct>*> {
+		new MemberInfoTyped<ExampleDerivedStruct, decltype(ExampleDerivedStruct::e3)> {"e3", &ExampleDerivedStruct::e3},
+		new MemberInfoTyped<ExampleDerivedStruct, decltype(ExampleDerivedStruct::i4)> {"i4", &ExampleDerivedStruct::i4}
 	}
 };
-*/
+
+
 } // namespace Tests
 
 } // namespace Farb

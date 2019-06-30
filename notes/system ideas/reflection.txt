@@ -37,3 +37,6 @@ adding function pointers to a list
 https://stackoverflow.com/questions/5019856/initialize-static-variables-in-c-class
 https://en.cppreference.com/w/cpp/language/aggregate_initialization
 
+
+matching types against a function declaration for calling (as in a command line)
+http://www.drdobbs.com/cpp/extracting-function-parameter-and-return/240000586

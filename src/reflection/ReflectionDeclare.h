@@ -70,6 +70,8 @@ public:
 
 	}
 
+	const HString& GetName() const { return name; }
+
 	virtual bool AssignBool(byte* obj, bool value) const { return false; }
 	virtual bool AssignUInt(byte* obj, uint value) const { return false; }
 	virtual bool AssignInt(byte* obj, int value) const { return false; }
@@ -98,6 +100,9 @@ public:
 template <typename T>
 TypeInfo* GetTypeInfo()
 {
+	static_assert(
+		!std::is_fundamental<T>::value,
+		"GetTypeInfo needs to be overridden for this primitive type.");
 	return &T::typeInfo;
 }
 
@@ -190,7 +195,6 @@ struct ReflectionContext
 	TypeInfo* typeInfo;
 	byte* object;
 };
-
 
 } // namespace Reflection
 
