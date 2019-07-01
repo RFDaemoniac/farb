@@ -67,7 +67,6 @@ public:
 	TypeInfo(HString name)
 		: name(name)
 	{
-
 	}
 
 	const HString& GetName() const { return name; }
@@ -124,16 +123,17 @@ template<typename T>
 struct has_GetTypeInfo<T, void_t<decltype(T::GetTypeInfo)> > : std::true_type {};
 
 
-template<typename T, typename std::enable_if<has_GetTypeInfo<T>{}, int>::type = 0>
+template<typename T>
 TypeInfo* GetTypeInfo(const T& obj)
 {
-	return obj.GetTypeInfo();
-}
-
-template<typename T, typename std::enable_if<!has_GetTypeInfo<T>{}, int>::type = 0>
-TypeInfo* GetTypeInfo(const T& obj)
-{
-	return GetTypeInfo<T>();
+	if constexpr (has_GetTypeInfo<T>::value)
+	{
+		return obj.GetTypeInfo();
+	}
+	else
+	{
+		return GetTypeInfo<T>();
+	}
 }
 
 template<typename T>

@@ -5,7 +5,6 @@
 #include <iostream>
 #include <limits.h>
 #include <type_traits>
-#include <typeindex>
 #include <unordered_map>
 
 #include "ReflectionDeclare.h"
@@ -113,15 +112,15 @@ template<typename T>
 struct TypeInfoCustomLeaf : public TypeInfo
 {
 protected:
-	std::unordered_map<std::type_index, std::shared_ptr<AssignFunction <T> > > tpAssignFunctions;
+	std::unordered_map<std::string, std::shared_ptr<AssignFunction <T> > > tpAssignFunctions;
 
 public:
 	template <typename ... TArgs>
-	static TypeInfoCustomLeaf&& Construct(HString name, TArgs ... args)
+	static TypeInfoCustomLeaf Construct(HString name, TArgs ... args)
 	{
 		auto leafTypeInfo = TypeInfoCustomLeaf(name);
 		leafTypeInfo.RegisterAssignFunctions(args...);
-		return std::move(leafTypeInfo);
+		return leafTypeInfo;
 	}
 
 	virtual bool AssignBool(byte* obj, bool value) const override
@@ -158,8 +157,8 @@ protected:
 	template <typename TArg>
 	bool Assign(byte* obj, TArg value) const
 	{
-		auto index = std::type_index(typeid(TArg));
-		const auto iter = tpAssignFunctions.find(index);
+		auto typeName = GetTypeInfo<TArg>()->GetName();
+		const auto iter = tpAssignFunctions.find(typeName);
 		if (iter == tpAssignFunctions.end())
 		{
 			// we do not have an assign function that takes this type
@@ -180,16 +179,16 @@ private:
 			static_assert(
 				std::is_same<T, C>::value,
 				"member function for TypeInfoCustomLeaf belongs to another class");
-			auto index = std::type_index(typeid(TArg));
+			auto typeName = GetTypeInfo<TArg>()->GetName();
 			tpAssignFunctions.emplace(
-				index,
+				typeName,
 				new AssignFunctionTypedMember<T, TArg>(pAssign));
 		}
 		else
 		{
-			auto index = std::type_index(typeid(TArg));
+			auto typeName = GetTypeInfo<TArg>()->GetName();
 			tpAssignFunctions.emplace(
-				index,
+				typeName,
 				new AssignFunctionTyped<T, TArg>(pAssign));
 		}
 	}
