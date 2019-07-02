@@ -12,48 +12,6 @@ namespace Farb
 namespace Reflection
 {
 
-static TypeInfoCustomLeaf<int> intTypeInfo = TypeInfoCustomLeaf<int>::Construct(
-	"int",
-	static_cast<bool (*)(int&, uint)>([](int& object, uint value)
-	{
-		if (value > INT_MAX) { return false; }
-		object = static_cast<int>(value);
-		return true;
-	}),
-	static_cast<bool (*)(int&, int)>([](int& object, int value)
-	{
-		object = value;
-		return true;
-	})
-);
-
-template <>
-TypeInfo* GetTypeInfo<int>()
-{
-	return &intTypeInfo;
-}
-
-static TypeInfoCustomLeaf<uint> uintTypeInfo = TypeInfoCustomLeaf<uint>::Construct(
-	"uint",
-	static_cast<bool (*)(uint&, uint)>([](uint& object, uint value)
-	{
-		object = value;
-		return true;
-	}),
-	static_cast<bool (*)(uint&, int)>([](uint& object, int value)
-	{
-		if (value < 0 ) { return false; }
-		object = static_cast<uint>(value);
-		return true;
-	})
-);
-
-template <>
-TypeInfo* GetTypeInfo<uint>()
-{
-	return &uintTypeInfo;
-}
-
 static TypeInfoCustomLeaf<bool> boolTypeInfo = TypeInfoCustomLeaf<bool>::Construct(
 	"bool",
 	static_cast<bool (*)(bool&, bool)>([](bool& object, bool value)
@@ -91,11 +49,62 @@ static TypeInfoCustomLeaf<bool> boolTypeInfo = TypeInfoCustomLeaf<bool>::Constru
 	})
 );
 
-template <>
-TypeInfo* GetTypeInfo<bool>()
+template<>
+struct TypeInfoHolder<bool>
 {
-	return &boolTypeInfo;
-}
+	static TypeInfo* GetTypeInfo()
+	{
+		return &boolTypeInfo;
+	}
+};
+
+static TypeInfoCustomLeaf<int> intTypeInfo = TypeInfoCustomLeaf<int>::Construct(
+	"int",
+	static_cast<bool (*)(int&, uint)>([](int& object, uint value)
+	{
+		if (value > INT_MAX) { return false; }
+		object = static_cast<int>(value);
+		return true;
+	}),
+	static_cast<bool (*)(int&, int)>([](int& object, int value)
+	{
+		object = value;
+		return true;
+	})
+);
+
+template<>
+struct TypeInfoHolder<int>
+{
+	static TypeInfo* GetTypeInfo()
+	{
+		return &intTypeInfo;
+	}
+};
+
+static TypeInfoCustomLeaf<uint> uintTypeInfo = TypeInfoCustomLeaf<uint>::Construct(
+	"uint",
+	static_cast<bool (*)(uint&, uint)>([](uint& object, uint value)
+	{
+		object = value;
+		return true;
+	}),
+	static_cast<bool (*)(uint&, int)>([](uint& object, int value)
+	{
+		if (value < 0 ) { return false; }
+		object = static_cast<uint>(value);
+		return true;
+	})
+);
+
+template<>
+struct TypeInfoHolder<uint>
+{
+	static TypeInfo* GetTypeInfo()
+	{
+		return &uintTypeInfo;
+	}
+};
 
 static TypeInfoCustomLeaf<float> floatTypeInfo = TypeInfoCustomLeaf<float>::Construct(
 	"float",
@@ -117,7 +126,7 @@ static TypeInfoCustomLeaf<float> floatTypeInfo = TypeInfoCustomLeaf<float>::Cons
 );
 
 template <>
-TypeInfo* GetTypeInfo<float>()
+TypeInfo* TypeInfoHolder<float>::GetTypeInfo()
 {
 	return &floatTypeInfo;
 }

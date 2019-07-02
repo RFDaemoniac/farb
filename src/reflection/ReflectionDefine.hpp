@@ -258,6 +258,10 @@ public:
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
+	TypeInfoArray(HString name)
+		: TypeInfo(name)
+	{ }
+
 	// rmf todo: @implement an array of pointers to objects that have derived types
 	// will be a little trickier to set up when to create something and what to create
 	// if copied/inherited/included you can just point to the same object

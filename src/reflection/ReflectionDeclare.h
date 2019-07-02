@@ -4,6 +4,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <experimental/type_traits>
 
 #include "../errors/ErrorOr.hpp"
 
@@ -96,19 +97,10 @@ public:
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 };
 
-template <typename T>
-TypeInfo* GetTypeInfo()
-{
-	static_assert(
-		!std::is_fundamental<T>::value,
-		"GetTypeInfo needs to be overridden for this primitive type.");
-	return &T::typeInfo;
-}
-
+/*
 // helper for defining something when template arguments resolve correctly
 // and therefore also being able to use sfinae when they don't
-template<typename...> struct voider { using type = void; };
-template<typename... Ts> using void_t = typename voider<Ts...>::type;
+
 
 template<typename T, typename = void>
 struct has_GetTypeInfo : std::false_type {};
@@ -121,6 +113,48 @@ struct has_GetTypeInfo : std::false_type {};
 // directly in the function definition
 template<typename T>
 struct has_GetTypeInfo<T, void_t<decltype(T::GetTypeInfo)> > : std::true_type {};
+*/
+
+template<typename...> struct voider { using type = void; };
+template<typename... Ts> using void_t = typename voider<Ts...>::type;
+
+template <typename T>
+struct TypeInfoHolder
+{
+	static TypeInfo* GetTypeInfo();
+};
+
+//template <class T>
+//using has_typeInfo = decltype(T::typeInfo);
+
+template <class T, typename = void>
+struct has_typeInfo : std::false_type {};
+
+template<typename T>
+struct has_typeInfo<T, void_t<decltype(T::typeInfo)> > : std::true_type {};
+
+template <typename T>
+TypeInfo* GetTypeInfo()
+{
+	//if constexpr (std::experimental::is_detected<has_typeInfo, T>::value)
+	if constexpr (has_typeInfo<T>::value)
+	{
+		return &T::typeInfo;
+	}
+	else
+	{
+		return TypeInfoHolder<T>::GetTypeInfo();
+	}
+}
+
+template <class T, typename = void>
+struct has_GetTypeInfo : std::false_type {};
+
+template<typename T>
+struct has_GetTypeInfo<T, void_t<decltype(std::declval<T>().GetTypeInfo())> > : std::true_type {};
+
+
+
 
 
 template<typename T>
