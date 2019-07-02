@@ -3,6 +3,7 @@
 
 #include "./reflection/TestReflectEnum.hpp"
 #include "./reflection/TestReflectStruct.hpp"
+#include "./reflection/TestReflectContainers.hpp"
 /*
 g++ -std=c++17 -Wfatal-errors RunTests.cpp -g;
 */
@@ -16,6 +17,8 @@ int main(void)
 	bool success = testReflectEnum.RunTests();
 	TestReflectStruct testReflectStruct;
 	success = testReflectStruct.RunTests();
+	TestReflectContainers testReflectContainers;
+	success = testReflectContainers.RunTests();
 	std::cout << "All Tests Passed" << std::endl;
 	return success;
 }

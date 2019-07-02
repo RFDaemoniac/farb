@@ -344,7 +344,6 @@ public:
 template<typename T>
 struct TypeInfoStruct : public TypeInfo
 {
-
 	// rmf note: at first all TypeInfo would have the opportunity for a parent type
 	// but I figured it was mostly unecessary for the others. Feel free to change in the future.
 	TypeInfo* parentType;
