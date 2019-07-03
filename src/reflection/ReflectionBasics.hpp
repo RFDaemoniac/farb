@@ -12,7 +12,7 @@ namespace Farb
 namespace Reflection
 {
 
-static TypeInfoCustomLeaf<bool> boolTypeInfo = TypeInfoCustomLeaf<bool>::Construct(
+static auto boolTypeInfo = TypeInfoCustomLeaf<bool>::Construct(
 	"bool",
 	static_cast<bool (*)(bool&, bool)>([](bool& object, bool value)
 	{
@@ -49,16 +49,13 @@ static TypeInfoCustomLeaf<bool> boolTypeInfo = TypeInfoCustomLeaf<bool>::Constru
 	})
 );
 
-template<>
-struct TypeInfoHolder<bool>
+template <>
+TypeInfo* GetTypeInfo<bool>()
 {
-	static TypeInfo* GetTypeInfo()
-	{
 		return &boolTypeInfo;
-	}
-};
+}
 
-static TypeInfoCustomLeaf<int> intTypeInfo = TypeInfoCustomLeaf<int>::Construct(
+static auto intTypeInfo = TypeInfoCustomLeaf<int>::Construct(
 	"int",
 	static_cast<bool (*)(int&, uint)>([](int& object, uint value)
 	{
@@ -73,16 +70,13 @@ static TypeInfoCustomLeaf<int> intTypeInfo = TypeInfoCustomLeaf<int>::Construct(
 	})
 );
 
-template<>
-struct TypeInfoHolder<int>
+template <>
+TypeInfo* GetTypeInfo<int>()
 {
-	static TypeInfo* GetTypeInfo()
-	{
-		return &intTypeInfo;
-	}
-};
+	return &intTypeInfo;
+}
 
-static TypeInfoCustomLeaf<uint> uintTypeInfo = TypeInfoCustomLeaf<uint>::Construct(
+static auto uintTypeInfo = TypeInfoCustomLeaf<uint>::Construct(
 	"uint",
 	static_cast<bool (*)(uint&, uint)>([](uint& object, uint value)
 	{
@@ -97,16 +91,13 @@ static TypeInfoCustomLeaf<uint> uintTypeInfo = TypeInfoCustomLeaf<uint>::Constru
 	})
 );
 
-template<>
-struct TypeInfoHolder<uint>
+template <>
+TypeInfo* GetTypeInfo<uint>()
 {
-	static TypeInfo* GetTypeInfo()
-	{
-		return &uintTypeInfo;
-	}
-};
+	return &uintTypeInfo;
+}
 
-static TypeInfoCustomLeaf<float> floatTypeInfo = TypeInfoCustomLeaf<float>::Construct(
+static auto floatTypeInfo = TypeInfoCustomLeaf<float>::Construct(
 	"float",
 	static_cast<bool (*)(float&, uint)>([](float& object, uint value)
 	{
@@ -126,12 +117,12 @@ static TypeInfoCustomLeaf<float> floatTypeInfo = TypeInfoCustomLeaf<float>::Cons
 );
 
 template <>
-TypeInfo* TypeInfoHolder<float>::GetTypeInfo()
+TypeInfo* GetTypeInfo<float>()
 {
 	return &floatTypeInfo;
 }
 
-static TypeInfoCustomLeaf<std::string> stringTypeInfo = TypeInfoCustomLeaf<std::string>::Construct(
+static auto stringTypeInfo = TypeInfoCustomLeaf<std::string>::Construct(
 	"std::string",
 	static_cast<bool (*)(std::string&, std::string)>([](std::string& object, std::string value)
 	{

@@ -14,18 +14,21 @@ namespace Reflection
 {
 
 template<typename TVal>
-static TypeInfoArray<std::vector<TVal>, TVal> vectorTypeInfo = TypeInfoArray<std::vector<TVal>, TVal>(
+static auto vectorTypeInfo = TypeInfoArray<std::vector<TVal>, TVal>(
 	std::string("std::vector<" + GetTypeInfo<TVal>()->GetName() + ">"));
 
 
 template<typename TVal>
-struct TypeInfoHolder<std::vector<TVal>>
+struct TemplatedTypeInfo<std::vector<TVal>>
 {
 	static TypeInfo* GetTypeInfo()
 	{
 		return &vectorTypeInfo<TVal>;
 	}
 };
+
+template<typename TKey, typename TVal>
+static auto unorderedMapTypeInfo = TypeInfoTable
 
 } // namespace Reflection
 

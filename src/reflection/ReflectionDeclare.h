@@ -119,7 +119,7 @@ template<typename...> struct voider { using type = void; };
 template<typename... Ts> using void_t = typename voider<Ts...>::type;
 
 template <typename T>
-struct TypeInfoHolder
+struct TemplatedTypeInfo
 {
 	static TypeInfo* GetTypeInfo();
 };
@@ -143,7 +143,7 @@ TypeInfo* GetTypeInfo()
 	}
 	else
 	{
-		return TypeInfoHolder<T>::GetTypeInfo();
+		return TemplatedTypeInfo<T>::GetTypeInfo();
 	}
 }
 

@@ -255,6 +255,62 @@ public:
 	}
 };
 
+/*
+// rmf todo: consider using this kind of class to unify the api
+// if multiple types don't fit.
+// key thing that seems like it's not fitting is a hash set, which
+// can't really push back a default, since changing the value changes the location
+// this exposes a weakness in the in-place reflection style I've been going for
+// but we could get super complex with this interface allowing it to keep track of
+// an individual item being reflected, we would need to add calls when we're moving
+// on to the next item. Maybe when the next PushBackDefault is called or 
+template <typename T, typename TVal>
+struct ArrayInterface
+{
+	static bool BoundsCheck(T& obj, int index)
+	{
+		return index >= 0 && obj.size() <= index;
+	}
+
+	static TVal& At(T& obj, int index)
+	{
+		return t[index];
+	}
+
+	static void PushBackDefault(T& obj)
+	{
+		t.push_back(TVal());
+	}
+}
+
+template<typename TVal>
+struct ArrayInterface<std::unordered_set<TVal>, TVal>
+{
+	static std::unordered_map<std::unordered_set<TVal>*, TVal*> current;
+
+	static void PushBackDefault(T& obj)
+	{
+		if (current.contains(&obj) && current[&obj] != nullptr)
+		{
+			t.push_back(*(current[&obj]));
+			delete current[&obj];
+		}
+		current[&obj] = new TVal();
+	}
+
+	static void ArrayEnd(T& obj)
+	{
+		if (current.contains(&obj) && current[&obj] != nullptr)
+		{
+			t.push_back(*(current[&obj]));
+			delete current[&obj];
+			current.erase(&obj);
+		}
+	}
+	
+}
+*/
+
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
@@ -296,7 +352,36 @@ struct TypeInfoArray : public TypeInfo
 template<typename T, typename TKey, typename TVal>
 struct TypeInfoTable : public TypeInfo
 {
-	// rmf todo: @implement
+	virtual ErrorOr<ReflectionObject> GetAtKey(
+		byte* obj,
+		HString name) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		TKey key = TKey(name);
+
+		if (!t.contains(key))
+		{
+			return Error(this->name
+				+ " table GetAtKey "
+				+ name
+				+ " failed. No entry exists with that name.");
+		}
+
+		TVal& value = t.at(key);
+		return ReflectionObject::Construct(value);
+	}
+
+	virtual bool InsertKey(byte* obj, HString name) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		TKey key = TKey(name);
+
+		if (t.contains(key))
+		{
+			return false;
+		}
+		return t.insert({key, TVal()}).second;
+	}
 };
 
 template<typename T>
