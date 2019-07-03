@@ -1,0 +1,4 @@
+input and output printed, checked against file contents to see if it's new or not.
+Different files/directories for correct results, known issues, and new issues.
+Move from new issues to one of the others in order to make tests pass.
+Lets the known issues be codified in the repository so that when they change you have a history.

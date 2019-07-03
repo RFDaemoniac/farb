@@ -170,7 +170,7 @@ protected:
 
 private:
 	template <typename TFunc>
-	void RegisterAssignFunctions(TFunc pAssign)
+	void RegisterAssignFunctions(HString typeName, TFunc pAssign)
 	{
 		using TArg = typename ExtractFunctionTypes<TFunc>::Param;
 		if constexpr (ExtractFunctionTypes<TFunc>::IsMember::value)
@@ -179,18 +179,82 @@ private:
 			static_assert(
 				std::is_same<T, C>::value,
 				"member function for TypeInfoCustomLeaf belongs to another class");
-			auto typeName = GetTypeInfo<TArg>()->GetName();
+			//auto typeName = GetTypeInfo<TArg>()->GetName();
 			tpAssignFunctions.emplace(
 				typeName,
 				new AssignFunctionTypedMember<T, TArg>(pAssign));
 		}
 		else
 		{
-			auto typeName = GetTypeInfo<TArg>()->GetName();
+			//auto typeName = GetTypeInfo<TArg>()->GetName();
 			tpAssignFunctions.emplace(
 				typeName,
 				new AssignFunctionTyped<T, TArg>(pAssign));
 		}
+	}
+
+
+	// rmf note: this could cause a link lock if the types are interdependent
+	// so you can specify a type name to get around this
+	// see the overload that accepts an HString typeName
+	template <typename TFunc>
+	void RegisterAssignFunctions(TFunc pAssign)
+	{
+		using TArg = typename ExtractFunctionTypes<TFunc>::Param;
+		/*
+		rmf todo: consider trying to evaluate whether this is safe
+		so that we can give a better error message than just a linker deadlock...
+		static_assert(
+			std::is_same<TArg, T>::value
+			|| std::is_same<T,
+			"assignment functions whose value type does not match the target type must specify the typename of their value");
+		*/
+		if constexpr (ExtractFunctionTypes<TFunc>::IsMember::value)
+		{
+			using C = typename ExtractFunctionTypes<TFunc>::Class;
+			static_assert(
+				std::is_same<T, C>::value,
+				"member function for TypeInfoCustomLeaf belongs to another class");
+			if constexpr(std::is_same<TArg, T>::value)
+			{
+				auto typeName = name;
+				tpAssignFunctions.emplace(
+					typeName,
+					new AssignFunctionTypedMember<T, TArg>(pAssign));
+			}
+			else
+			{
+				auto typeName = GetTypeInfo<TArg>()->GetName();
+				tpAssignFunctions.emplace(
+					typeName,
+					new AssignFunctionTypedMember<T, TArg>(pAssign));
+			}
+		}
+		else
+		{
+			if constexpr(std::is_same<TArg, T>::value)
+			{
+				auto typeName = name;
+				tpAssignFunctions.emplace(
+					typeName,
+					new AssignFunctionTyped<T, TArg>(pAssign));
+			}
+			else
+			{
+				auto typeName = GetTypeInfo<TArg>()->GetName();
+				tpAssignFunctions.emplace(
+					typeName,
+					new AssignFunctionTyped<T, TArg>(pAssign));
+			}
+		}
+	}
+
+
+	template <typename TFunc, typename ... Rest>
+	void RegisterAssignFunctions(HString typeName, TFunc pAssign, Rest ... rest)
+	{
+		RegisterAssignFunctions(typeName, pAssign);
+		RegisterAssignFunctions(rest...);
 	}
 
 	template <typename TFunc, typename ... Rest>
@@ -255,68 +319,62 @@ public:
 	}
 };
 
-/*
-// rmf todo: consider using this kind of class to unify the api
-// if multiple types don't fit.
+// rmf todo: 
 // key thing that seems like it's not fitting is a hash set, which
 // can't really push back a default, since changing the value changes the location
 // this exposes a weakness in the in-place reflection style I've been going for
 // but we could get super complex with this interface allowing it to keep track of
 // an individual item being reflected, we would need to add calls when we're moving
-// on to the next item. Maybe when the next PushBackDefault is called or 
-template <typename T, typename TVal>
-struct ArrayInterface
-{
-	static bool BoundsCheck(T& obj, int index)
-	{
-		return index >= 0 && obj.size() <= index;
-	}
+// on to the next item. Maybe when the next PushBackDefault is called or ArrayEnd
+// we could also consider having an alternative interface for copying values
+// rather than reflecting in place
 
-	static TVal& At(T& obj, int index)
-	{
-		return t[index];
-	}
-
-	static void PushBackDefault(T& obj)
-	{
-		t.push_back(TVal());
-	}
-}
-
-template<typename TVal>
-struct ArrayInterface<std::unordered_set<TVal>, TVal>
-{
-	static std::unordered_map<std::unordered_set<TVal>*, TVal*> current;
-
-	static void PushBackDefault(T& obj)
-	{
-		if (current.contains(&obj) && current[&obj] != nullptr)
-		{
-			t.push_back(*(current[&obj]));
-			delete current[&obj];
-		}
-		current[&obj] = new TVal();
-	}
-
-	static void ArrayEnd(T& obj)
-	{
-		if (current.contains(&obj) && current[&obj] != nullptr)
-		{
-			t.push_back(*(current[&obj]));
-			delete current[&obj];
-			current.erase(&obj);
-		}
-	}
-	
-}
-*/
 
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
 {
-	TypeInfoArray(HString name)
+	using FBoundsCheck = bool (*)(T& obj, int index);
+	using FAt = TVal& (*)(T& obj, int index);
+	using FPushBackDefault = bool (*)(T& obj);
+	using FArrayEnd = bool (*)(T&obj);
+
+private:
+	FBoundsCheck pBoundsCheck;
+	FAt pAt;
+	FPushBackDefault pPushBackDefault;
+	FArrayEnd pArrayEnd;
+
+public:
+	TypeInfoArray(
+		HString name,
+		FBoundsCheck pBoundsCheck,
+		FAt pAt,
+		FPushBackDefault pPushBackDefault,
+		FArrayEnd pArrayEnd)
 		: TypeInfo(name)
+		, pBoundsCheck(pBoundsCheck)
+		, pAt(pAt)
+		, pPushBackDefault(pPushBackDefault)
+		, pArrayEnd(pArrayEnd)
 	{ }
+
+	template<typename TDefaultInterfaceArray >
+	static TypeInfoArray Construct(
+		HString name)
+	{
+		static_assert(
+			std::is_same<T, TDefaultInterfaceArray>::value,
+			"TypeInfoArray should not be constructed with another type as the default interface")	;
+		return TypeInfoArray(
+			name,
+			static_cast<FBoundsCheck>([](T& obj, int index )
+			{
+				return index >= 0 && obj.size() > index;
+			}),
+			static_cast<FAt>([](T& obj, int index) -> TVal& { return obj[index]; }),
+			static_cast<FPushBackDefault>([](T& obj) { obj.push_back(TVal()); return true; }),
+			static_cast<FArrayEnd>([](T& obj) { return true; }));
+	}
 
 	// rmf todo: @implement an array of pointers to objects that have derived types
 	// will be a little trickier to set up when to create something and what to create
@@ -328,7 +386,7 @@ struct TypeInfoArray : public TypeInfo
 		int index) const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
-		if (t->size() <= index)
+		if (!pBoundsCheck(*t, index))
 		{
 			return Error(
 				name
@@ -338,14 +396,20 @@ struct TypeInfoArray : public TypeInfo
 				+ std::to_string(t->size())
 				+ ".");
 		}
-		return ReflectionObject::Construct((*t)[index]);
+		return ReflectionObject::Construct(pAt(*t, index));
 	}
 
 	virtual bool PushBackDefault(byte* obj) const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
-		t->push_back(TVal());
-		return true;
+		return pPushBackDefault(*t);
+	}
+
+	virtual bool ArrayEnd(byte* obj) const override
+	{
+		if (pArrayEnd == nullptr) return true;
+		T* t = reinterpret_cast<T*>(obj);
+		return pArrayEnd(*t);
 	}
 };
 
@@ -359,7 +423,7 @@ struct TypeInfoTable : public TypeInfo
 		T* t = reinterpret_cast<T*>(obj);
 		TKey key = TKey(name);
 
-		if (!t.contains(key))
+		if (!t->contains(key))
 		{
 			return Error(this->name
 				+ " table GetAtKey "
@@ -367,7 +431,7 @@ struct TypeInfoTable : public TypeInfo
 				+ " failed. No entry exists with that name.");
 		}
 
-		TVal& value = t.at(key);
+		TVal& value = t->at(key);
 		return ReflectionObject::Construct(value);
 	}
 
@@ -376,11 +440,11 @@ struct TypeInfoTable : public TypeInfo
 		T* t = reinterpret_cast<T*>(obj);
 		TKey key = TKey(name);
 
-		if (t.contains(key))
+		if (t->contains(key))
 		{
 			return false;
 		}
-		return t.insert({key, TVal()}).second;
+		return t->insert({key, TVal()}).second;
 	}
 };
 

@@ -1,3 +1,12 @@
+Todo:
+more thorough tests
+	multiple indexes for arrays
+	members of every type
+	assign every type combination
+
+
+References:
+
 https://capnproto.org/cxx.html#dynamic-reflection
 
 https://github.com/preshing/FlexibleReflection/blob/part1/Main.cpp

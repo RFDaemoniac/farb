@@ -56,6 +56,7 @@ struct ReflectionObject
 
 	ErrorOr<ReflectionObject> GetAtIndex(int index) const;
 	bool PushBackDefault() const;
+	bool ArrayEnd() const;
 };
 
 struct TypeInfo
@@ -95,6 +96,7 @@ public:
 	}
 
 	virtual bool PushBackDefault(byte* obj) const { return false; }
+	virtual bool ArrayEnd(byte* obj) const { return false; }
 };
 
 /*
@@ -223,11 +225,18 @@ bool ReflectionObject::PushBackDefault() const
 	return typeInfo->PushBackDefault(location);
 }
 
+bool ReflectionObject::ArrayEnd() const
+{
+	return typeInfo->ArrayEnd(location);
+}
+
 struct ReflectionContext
 {
 	ReflectionContext* parentContext;
 	TypeInfo* typeInfo;
 	byte* object;
+	// could put function to call here after being done as an optional member
+	// which can be used for constructing the object not in place and then copying
 };
 
 } // namespace Reflection
