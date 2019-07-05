@@ -22,6 +22,7 @@ public:
 	{
 		ExampleEnum e = ExampleEnum::NegativeTwo;
 		ReflectionObject eReflect = ReflectionObject::Construct(e);
+		PrintTestName(eReflect);
 		assert(e == ExampleEnum::NegativeTwo);
 		bool success = eReflect.AssignString("One");
 		farb_print(success && e == ExampleEnum::One, "reflect enum assign string");

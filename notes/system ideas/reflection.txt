@@ -3,6 +3,7 @@ more thorough tests
 	multiple indexes for arrays
 	members of every type
 	assign every type combination
+	make constructors and accessors constexpr, if possible
 
 
 References:

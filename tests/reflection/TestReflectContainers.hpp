@@ -21,10 +21,9 @@ class TestReflectContainers : public ITest
 public:
 	virtual bool RunTests() const override
 	{
-		std::cout << "Test reflect std::vector<int>" << std::endl;
 		std::vector<int> viTest;
-
 		ReflectionObject viReflect = ReflectionObject::Construct(viTest);
+		PrintTestName(viReflect);
 
 		bool nameMatches = viReflect.typeInfo->GetName() == "std::vector<int>";
 		farb_print(nameMatches, "std:vector<int> name is " + viReflect.typeInfo->GetName());
@@ -46,12 +45,10 @@ public:
 		farb_print(success && viTest[0] == 2, "reflect std::vector<int> assign to element int");
 		assert(success && viTest[0] == 2);
 
-
-		std::cout << "Test reflect std::unordered_set<int>" << std::endl;
-
-		std::unordered_set<int> siTest;
-		ReflectionObject setReflect = ReflectionObject::Construct(siTest);
-		assert(siTest.size() == 0);
+		std::unordered_set<int> setTest;
+		ReflectionObject setReflect = ReflectionObject::Construct(setTest);
+		PrintTestName(setReflect);
+		assert(setTest.size() == 0);
 
 		success = setReflect.PushBackDefault();
 		iReflect = FARB_CHECK(
@@ -63,9 +60,25 @@ public:
 		assert(success && *pAssignedValue == 2);
 		success = setReflect.ArrayEnd();
 		farb_print(success, "reflect std::unordered_set<int> array end");
-		farb_print(siTest.size() == 1, "reflect std::unordered_set<int> buffered insert correct length");
-		farb_print(siTest.count(2), "reflect std::unordered_set<int> buffered insert correct value");
-		assert(success && siTest.size() == 1 && siTest.count(2));
+		farb_print(setTest.size() == 1, "reflect std::unordered_set<int> buffered insert correct length");
+		farb_print(setTest.count(2), "reflect std::unordered_set<int> buffered insert correct value");
+		assert(success && setTest.size() == 1 && setTest.count(2));
+
+		std::unordered_map<std::string, int> mapTest;
+		ReflectionObject mapReflect = ReflectionObject::Construct(mapTest);
+		PrintTestName(mapReflect);
+		assert(mapTest.size() == 0);
+
+		success = mapReflect.InsertKey("One");
+		farb_print(success && mapTest.count("One"),
+			"reflect std::unordered_map<std::string, int> InsertKey");
+		assert(success && mapTest.count("One"));
+		iReflect = FARB_CHECK(mapReflect.GetAtKey("One"), 
+			"reflect std::unordered_map<std::string, int> GetAtKey");
+
+		success = iReflect.AssignInt(1);
+		farb_print(success && mapTest["One"] == 1, "reflect std::unordered_map<std::string, int> assign to value int");
+		assert(success && mapTest["One"] == 1);
 
 		return true;
 	}

@@ -23,6 +23,7 @@ public:
 	{
 		ExampleBaseStruct s;
 		ReflectionObject sReflect = ReflectionObject::Construct(s);
+		PrintTestName(sReflect);
 		assert(s.e1 == ExampleEnum::One);
 		assert(s.i2 == 2);
 

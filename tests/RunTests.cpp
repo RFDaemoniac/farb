@@ -5,7 +5,7 @@
 #include "./reflection/TestReflectStruct.hpp"
 #include "./reflection/TestReflectContainers.hpp"
 /*
-g++ -std=c++17 -Wfatal-errors RunTests.cpp -g;
+g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 */
 
 using namespace Farb::Tests;

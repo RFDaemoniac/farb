@@ -15,6 +15,11 @@ using namespace Reflection;
 namespace Tests
 {
 
+void PrintTestName(ReflectionObject ro)
+{
+	std::cout << "Test reflect " << ro.typeInfo->GetName() << std::endl;
+}
+
 enum class ExampleEnum
 {
 	NegativeTwo = -2,
@@ -59,7 +64,7 @@ struct ExampleBaseStruct
 	{}
 
 	static TypeInfoStruct<ExampleBaseStruct> typeInfo;
-	virtual TypeInfo* GetTypeInfo() const { return &typeInfo; }
+	virtual TypeInfo* GetInstanceTypeInfo() const { return &typeInfo; }
 };
 
 TypeInfoStruct<ExampleBaseStruct> ExampleBaseStruct::typeInfo = TypeInfoStruct<ExampleBaseStruct> {
@@ -77,7 +82,7 @@ struct ExampleDerivedStruct : public ExampleBaseStruct
 	int i4;
 
 	static TypeInfoStruct<ExampleDerivedStruct> typeInfo;
-	virtual TypeInfo* GetTypeInfo() const override { return &typeInfo; }
+	virtual TypeInfo* GetInstanceTypeInfo() const override { return &typeInfo; }
 };
 
 TypeInfoStruct<ExampleDerivedStruct> ExampleDerivedStruct::typeInfo {

@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 
 #include "ReflectionDeclare.h"
 #include "ReflectionDefine.hpp"
@@ -22,7 +23,7 @@ static auto vectorTypeInfo = TypeInfoArray<std::vector<TVal>, TVal>::template Co
 template<typename TVal>
 struct TemplatedTypeInfo<std::vector<TVal> >
 {
-	static TypeInfo* GetTypeInfo()
+	static TypeInfo* Get()
 	{
 		return &vectorTypeInfo<TVal>;
 	}
@@ -87,22 +88,40 @@ template<typename TVal>
 std::unordered_map<std::unordered_set<TVal>*, TVal*> SetTypeInfoValueBuffer<TVal>::current;
 
 template<typename TVal>
-static auto setTypeInfo = TypeInfoArray<std::unordered_set<TVal>, TVal>(
-	HString("std::unordered_set<" + GetTypeInfo<TVal>()->GetName() + ">"),
-	SetTypeInfoValueBuffer<TVal>::BoundsCheck,
-	SetTypeInfoValueBuffer<TVal>::At,
-	SetTypeInfoValueBuffer<TVal>::PushBackDefault,
-	SetTypeInfoValueBuffer<TVal>::ArrayEnd
-);
-
-template<typename TVal>
 struct TemplatedTypeInfo<std::unordered_set<TVal> >
 {
-	static TypeInfo* GetTypeInfo()
+	static TypeInfo* Get()
 	{
-		return &setTypeInfo<TVal>;
+		static auto setTypeInfo = TypeInfoArray<std::unordered_set<TVal>, TVal>(
+			HString("std::unordered_set<" + Reflection::GetTypeInfo<TVal>()->GetName() + ">"),
+			SetTypeInfoValueBuffer<TVal>::BoundsCheck,
+			SetTypeInfoValueBuffer<TVal>::At,
+			SetTypeInfoValueBuffer<TVal>::PushBackDefault,
+			SetTypeInfoValueBuffer<TVal>::ArrayEnd
+		);
+
+		return &setTypeInfo;
 	}
 };
+
+template<typename TKey, typename TVal>
+struct TemplatedTypeInfo<std::unordered_map<TKey, TVal> >
+{
+	static TypeInfo* Get()
+	{
+		static auto mapTypeInfo = TypeInfoTable<std::unordered_map<TKey, TVal>, TKey, TVal>(
+			HString(
+				"std::unordered_map<"
+				+ Reflection::GetTypeInfo<TKey>()->GetName()
+				+ ", "
+				+ Reflection::GetTypeInfo<TVal>()->GetName()
+				+ ">")
+		);
+
+		return &mapTypeInfo;
+	}
+};
+
 
 } // namespace Reflection
 

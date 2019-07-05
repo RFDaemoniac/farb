@@ -416,6 +416,11 @@ public:
 template<typename T, typename TKey, typename TVal>
 struct TypeInfoTable : public TypeInfo
 {
+
+	TypeInfoTable(HString name)
+		: TypeInfo(name)
+	{ }
+
 	virtual ErrorOr<ReflectionObject> GetAtKey(
 		byte* obj,
 		HString name) const override
@@ -423,7 +428,7 @@ struct TypeInfoTable : public TypeInfo
 		T* t = reinterpret_cast<T*>(obj);
 		TKey key = TKey(name);
 
-		if (!t->contains(key))
+		if (!t->count(key))
 		{
 			return Error(this->name
 				+ " table GetAtKey "
@@ -440,7 +445,7 @@ struct TypeInfoTable : public TypeInfo
 		T* t = reinterpret_cast<T*>(obj);
 		TKey key = TKey(name);
 
-		if (t->contains(key))
+		if (t->count(key))
 		{
 			return false;
 		}

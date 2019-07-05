@@ -37,21 +37,21 @@ static inline void farb_print (ErrorOr<T>& result, std::string sTestName)
 {
 	if (result.IsError())
 	{
-		std::cout << "## FAIL ## -- " << sTestName << std::endl;
+		std::cout << " ## FAIL ## " << sTestName << std::endl;
 		result.GetError().Log();
 	}
 	else
 	{
-		std::cout << "PASS -- " << sTestName << std::endl;
+		std::cout << "    PASS -- " << sTestName << std::endl;
 	}
 }
 
 static inline bool farb_print (bool success, std::string sTestName)
 {
 	if (success)
-		std::cout << "PASS -- ";
+		std::cout << "    PASS -- ";
 	else
-		std::cout << "## FAIL ## -- ";
+		std::cout << " ## FAIL ## ";
 	std::cout << sTestName << std::endl;
 	return success;
 }
@@ -59,9 +59,9 @@ static inline bool farb_print (bool success, std::string sTestName)
 static inline bool farb_print (bool success, std::string sTrue, std::string sFalse)
 {
 	if (success && !sTrue.empty())
-		std::cout << "PASS -- " << sTrue << std::endl;
+		std::cout << "    PASS -- " << sTrue << std::endl;
 	else if (!success && !sFalse.empty())
-		std::cout << "## FAIL ## -- " << sFalse << std::endl;
+		std::cout << " ## FAIL ## " << sFalse << std::endl;
 	return success;
 }
 

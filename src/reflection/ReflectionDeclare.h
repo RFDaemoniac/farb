@@ -123,7 +123,7 @@ template<typename... Ts> using void_t = typename voider<Ts...>::type;
 template <typename T>
 struct TemplatedTypeInfo
 {
-	static TypeInfo* GetTypeInfo();
+	static TypeInfo* Get();
 };
 
 //template <class T>
@@ -145,26 +145,23 @@ TypeInfo* GetTypeInfo()
 	}
 	else
 	{
-		return TemplatedTypeInfo<T>::GetTypeInfo();
+		return TemplatedTypeInfo<T>::Get();
 	}
 }
 
 template <class T, typename = void>
-struct has_GetTypeInfo : std::false_type {};
+struct has_GetInstanceTypeInfo : std::false_type {};
 
 template<typename T>
-struct has_GetTypeInfo<T, void_t<decltype(std::declval<T>().GetTypeInfo())> > : std::true_type {};
-
-
-
+struct has_GetInstanceTypeInfo<T, void_t<decltype(std::declval<T>().GetInstanceTypeInfo())> > : std::true_type {};
 
 
 template<typename T>
 TypeInfo* GetTypeInfo(const T& obj)
 {
-	if constexpr (has_GetTypeInfo<T>::value)
+	if constexpr (has_GetInstanceTypeInfo<T>::value)
 	{
-		return obj.GetTypeInfo();
+		return obj.GetInstanceTypeInfo();
 	}
 	else
 	{
