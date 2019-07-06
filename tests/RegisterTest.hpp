@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 
-#include "../src/errors/ErrorOr.hpp"
+#include "../src/core/ErrorOr.hpp"
 
 namespace Farb
 {

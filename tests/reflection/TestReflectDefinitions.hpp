@@ -5,6 +5,8 @@
 #include "../../src/reflection/ReflectionDefine.hpp"
 #include "../../src/reflection/ReflectionBasics.hpp"
 #include "../../src/reflection/ReflectionContainers.hpp"
+#include "../../src/core/NamedType.hpp"
+#include "../../src/core/ValueCheckedType.hpp"
 
 
 namespace Farb
@@ -19,6 +21,22 @@ void PrintTestName(ReflectionObject ro)
 {
 	std::cout << "Test reflect " << ro.typeInfo->GetName() << std::endl;
 }
+
+struct ExampleNamedTypeIntTag
+{
+	static HString GetName() { return "ExampleNamedTypeInt"; }
+};
+
+using ExampleNamedTypeInt = NamedType<int, ExampleNamedTypeIntTag>;
+
+struct ExampleValueCheckedTypeEvenIntTag
+{
+	static HString GetName() { return "ExampleValueCheckedTypeEvenInt"; }
+
+	static bool IsValid(const int& i) { return i % 2 == 0; }
+};
+
+using ExampleValueCheckedTypeEvenInt = ValueCheckedType<int, ExampleValueCheckedTypeEvenIntTag>;
 
 enum class ExampleEnum
 {

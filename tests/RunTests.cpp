@@ -4,21 +4,36 @@
 #include "./reflection/TestReflectEnum.hpp"
 #include "./reflection/TestReflectStruct.hpp"
 #include "./reflection/TestReflectContainers.hpp"
+#include "./reflection/TestReflectWrappers.hpp"
 /*
 g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 */
 
 using namespace Farb::Tests;
 
+template<typename TTest, typename ... TRest>
+bool Run()
+{
+	if constexpr(sizeof...(TRest) == 0)
+	{
+		return TTest().RunTests();
+	}
+	else
+	{
+		return TTest().RunTests() && Run<TRest...>();
+	}
+}
+
 int main(void)
 {
 	std::cout << "Beginning Tests" << std::endl;
-	TestReflectEnum testReflectEnum;
-	bool success = testReflectEnum.RunTests();
-	TestReflectStruct testReflectStruct;
-	success = testReflectStruct.RunTests();
-	TestReflectContainers testReflectContainers;
-	success = testReflectContainers.RunTests();
+	
+	bool success = Run<
+		TestReflectEnum,
+		TestReflectStruct,
+		TestReflectContainers,
+		TestReflectWrappers>();
+	
 	std::cout << "All Tests Passed" << std::endl;
 	return success;
 }

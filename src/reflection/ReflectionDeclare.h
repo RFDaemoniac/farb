@@ -6,16 +6,11 @@
 #include <vector>
 #include <experimental/type_traits>
 
-#include "../errors/ErrorOr.hpp"
+#include "../core/BuiltinTypedefs.h"
+#include "../core/ErrorOr.hpp"
 
 namespace Farb
 {
-
-// rmf todo: @implement HString or another pooled string option
-// ideally one that allows for a constexpr constructor
-using HString = std::string;
-using uint = unsigned int;
-using byte = unsigned char;
 
 namespace Reflection
 {
@@ -24,6 +19,8 @@ struct TypeInfo;
 
 struct ReflectionObject
 {
+	// todo: add per-reflection tracking like required members, etc
+
 	byte* location;
 	TypeInfo* typeInfo;
 
@@ -57,6 +54,8 @@ struct ReflectionObject
 	ErrorOr<ReflectionObject> GetAtIndex(int index) const;
 	bool PushBackDefault() const;
 	bool ArrayEnd() const;
+
+	ErrorOr<std::string> ToString() const;
 };
 
 struct TypeInfo
@@ -68,8 +67,7 @@ protected:
 public:
 	TypeInfo(HString name)
 		: name(name)
-	{
-	}
+	{ }
 
 	const HString& GetName() const { return name; }
 
@@ -97,6 +95,11 @@ public:
 
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 	virtual bool ArrayEnd(byte* obj) const { return false; }
+
+	virtual ErrorOr<std::string> ToString(byte* obj) const
+	{
+		return Error(name + " ToString not implemented");
+	}
 };
 
 /*
@@ -170,11 +173,23 @@ TypeInfo* GetTypeInfo(const T& obj)
 }
 
 template<typename T>
+std::string ToString(T& obj)
+{
+	return Reflect(obj).ToString();
+}
+
+template<typename T>
 ReflectionObject ReflectionObject::Construct(T& object)
 {
 	return ReflectionObject(
 		reinterpret_cast<byte*>(&object),
 		GetTypeInfo(object));
+}
+
+template<typename T>
+ReflectionObject Reflect(T& object)
+{
+	return ReflectionObject::Construct(object);
 }
 
 bool ReflectionObject::AssignBool(bool value) const
@@ -225,6 +240,11 @@ bool ReflectionObject::PushBackDefault() const
 bool ReflectionObject::ArrayEnd() const
 {
 	return typeInfo->ArrayEnd(location);
+}
+
+ErrorOr<std::string> ReflectionObject::ToString() const
+{
+	return typeInfo->ToString(location);
 }
 
 struct ReflectionContext

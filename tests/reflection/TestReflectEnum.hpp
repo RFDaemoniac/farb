@@ -4,7 +4,7 @@
 #include <assert.h> 
 
 #include "../RegisterTest.hpp"
-#include "../../src/reflection/ReflectionDefine.hpp"
+#include "../../src/reflection/ReflectionDeclare.h"
 #include "TestReflectDefinitions.hpp"
 
 

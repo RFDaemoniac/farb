@@ -4,11 +4,12 @@
 #include <memory>
 #include <iostream>
 #include <limits.h>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 
+#include "../utils/TypeInspection.hpp"
 #include "ReflectionDeclare.h"
-
 
 namespace Farb
 {
@@ -87,28 +88,6 @@ bool AssignFunction<T>::Call(T& object, TArg value) const
 }
 
 template<typename T>
-struct ExtractFunctionTypes
-{ };
-
-template<typename C, typename R, typename A>
-struct ExtractFunctionTypes<R(C::*)(A)>
-{
-	using IsMember = std::true_type;
-	using Class = C;
-	using Return = R;
-	using Param = A;
-};
-
-template<typename C, typename R, typename A>
-struct ExtractFunctionTypes<R(*)(C&, A)>
-{
-	using IsMember = std::false_type;
-	using Class = C;
-	using Return = R;
-	using Param = A;
-};
-
-template<typename T>
 struct TypeInfoCustomLeaf : public TypeInfo
 {
 protected:
@@ -148,11 +127,27 @@ public:
 		return Assign(obj, value);
 	}
 
-protected:
-	TypeInfoCustomLeaf(HString name)
-		: TypeInfo(name)
-		, tpAssignFunctions()
-	{ }
+	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		if constexpr(std::is_same<bool, T>::value)
+		{
+			bool b = static_cast<bool>(t);
+			return b ? std::string("true") : std::string("false");
+		}
+		else if constexpr(std::is_integral<T>::value || std::is_floating_point<T>::value)
+		{
+			return std::to_string(*t);
+		}
+		else if constexpr(std::is_same<std::string, T>::value)
+		{
+			return ErrorOr<std::string>(*t);
+		}
+		else
+		{
+			return Error(name + " ToString not implemented");
+		}
+	}
 
 	template <typename TArg>
 	bool Assign(byte* obj, TArg value) const
@@ -168,6 +163,12 @@ protected:
 		return iter->second->Call(*t, value);
 	}
 
+protected:
+	TypeInfoCustomLeaf(HString name)
+		: TypeInfo(name)
+		, tpAssignFunctions()
+	{ }
+
 private:
 	template <typename TFunc>
 	void RegisterAssignFunctions(HString typeName, TFunc pAssign)
@@ -179,14 +180,12 @@ private:
 			static_assert(
 				std::is_same<T, C>::value,
 				"member function for TypeInfoCustomLeaf belongs to another class");
-			//auto typeName = GetTypeInfo<TArg>()->GetName();
 			tpAssignFunctions.emplace(
 				typeName,
 				new AssignFunctionTypedMember<T, TArg>(pAssign));
 		}
 		else
 		{
-			//auto typeName = GetTypeInfo<TArg>()->GetName();
 			tpAssignFunctions.emplace(
 				typeName,
 				new AssignFunctionTyped<T, TArg>(pAssign));
@@ -209,44 +208,32 @@ private:
 			|| std::is_same<T,
 			"assignment functions whose value type does not match the target type must specify the typename of their value");
 		*/
-		if constexpr (ExtractFunctionTypes<TFunc>::IsMember::value)
-		{
-			using C = typename ExtractFunctionTypes<TFunc>::Class;
-			static_assert(
-				std::is_same<T, C>::value,
-				"member function for TypeInfoCustomLeaf belongs to another class");
-			if constexpr(std::is_same<TArg, T>::value)
-			{
-				auto typeName = name;
-				tpAssignFunctions.emplace(
-					typeName,
-					new AssignFunctionTypedMember<T, TArg>(pAssign));
-			}
-			else
-			{
-				auto typeName = GetTypeInfo<TArg>()->GetName();
-				tpAssignFunctions.emplace(
-					typeName,
-					new AssignFunctionTypedMember<T, TArg>(pAssign));
-			}
-		}
-		else
+		HString typeName = [&]
 		{
 			if constexpr(std::is_same<TArg, T>::value)
 			{
-				auto typeName = name;
-				tpAssignFunctions.emplace(
-					typeName,
-					new AssignFunctionTyped<T, TArg>(pAssign));
+				return name;
+			} else {
+				return GetTypeInfo<TArg>()->GetName();
+			}
+		}();
+
+		AssignFunction<T>* pAssignWrapper = [&]
+		{
+			if constexpr(ExtractFunctionTypes<TFunc>::IsMember::value)
+			{
+				using C = typename ExtractFunctionTypes<TFunc>::Class;
+				static_assert(
+					std::is_same<T, C>::value,
+					"member function for TypeInfoCustomLeaf belongs to another class");
+				return new AssignFunctionTypedMember<T, TArg>(pAssign);
 			}
 			else
 			{
-				auto typeName = GetTypeInfo<TArg>()->GetName();
-				tpAssignFunctions.emplace(
-					typeName,
-					new AssignFunctionTyped<T, TArg>(pAssign));
+				return new AssignFunctionTyped<T, TArg>(pAssign);
 			}
-		}
+		}();
+		tpAssignFunctions.emplace(typeName, pAssignWrapper);
 	}
 
 
@@ -316,6 +303,19 @@ public:
 			}
 		}
 		return false;
+	}
+
+	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		for (const auto & pair : vValues)
+		{
+			if (static_cast<T>(pair.second) == *t)
+			{
+				return ErrorOr<std::string>(pair.first);
+			}
+		}
+		return std::to_string(static_cast<int>(*t));
 	}
 };
 
