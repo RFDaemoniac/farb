@@ -19,7 +19,7 @@ namespace Tests
 
 void PrintTestName(ReflectionObject ro)
 {
-	std::cout << "Test reflect " << ro.typeInfo->GetName() << std::endl;
+	std::cout << "Reflect " << ro.typeInfo->GetName() << std::endl;
 }
 
 struct ExampleNamedTypeIntTag

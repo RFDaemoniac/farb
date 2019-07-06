@@ -541,6 +541,12 @@ struct TypeInfoStruct : public TypeInfo
 			+ name
 			+ " failed. No member exists with that name.");
 	}
+
+	// implemented as a no-op to unify table and struct deserialization
+	virtual bool InsertKey(byte* obj, HString name) const override
+	{
+		return !(GetAtKey(obj, name).IsError());
+	}
 };
 
 } // namespace Reflection

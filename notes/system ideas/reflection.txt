@@ -4,6 +4,7 @@ more thorough tests
 	members of every type
 	assign every type combination
 	make constructors and accessors constexpr, if possible
+	table key of type other than HString, but still must be constructable from HString
 
 
 References:

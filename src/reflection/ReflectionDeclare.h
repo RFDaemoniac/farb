@@ -140,7 +140,7 @@ template<typename T>
 struct has_typeInfo<T, void_t<decltype(T::typeInfo)> > : std::true_type {};
 
 template <typename T>
-TypeInfo* GetTypeInfo()
+inline TypeInfo* GetTypeInfo()
 {
 	//if constexpr (std::experimental::is_detected<has_typeInfo, T>::value)
 	if constexpr (has_typeInfo<T>::value)
@@ -161,7 +161,7 @@ struct has_GetInstanceTypeInfo<T, void_t<decltype(std::declval<T>().GetInstanceT
 
 
 template<typename T>
-TypeInfo* GetTypeInfo(const T& obj)
+inline TypeInfo* GetTypeInfo(const T& obj)
 {
 	if constexpr (has_GetInstanceTypeInfo<T>::value)
 	{
@@ -174,7 +174,7 @@ TypeInfo* GetTypeInfo(const T& obj)
 }
 
 template<typename T>
-ReflectionObject Reflect(T& object)
+inline ReflectionObject Reflect(T& object)
 {
 	return ReflectionObject(
 		reinterpret_cast<byte*>(&object),
@@ -182,7 +182,7 @@ ReflectionObject Reflect(T& object)
 }
 
 template<typename T>
-std::string ToString(const T& obj)
+inline std::string ToString(const T& obj)
 {
 	// casting away const should be fine here because
 	// ToString and GetName both do not modify the underlying value
@@ -191,74 +191,65 @@ std::string ToString(const T& obj)
 	if (result.IsError())
 	{
 		// rmf todo: log error
-		return "Uknown value of type " + reflect.GetName();
+		return "Uknown value of type " + reflect.typeInfo->GetName();
 	}
 	return result.GetValue();
 }
 
-bool ReflectionObject::AssignBool(bool value) const
+inline bool ReflectionObject::AssignBool(bool value) const
 {
 	return typeInfo->AssignBool(location, value);
 }
 
-bool ReflectionObject::AssignUInt(uint value) const
+inline bool ReflectionObject::AssignUInt(uint value) const
 {
 	return typeInfo->AssignUInt(location, value);
 }
 
-bool ReflectionObject::AssignInt(int value) const
+inline bool ReflectionObject::AssignInt(int value) const
 {
 	return typeInfo->AssignInt(location, value);
 }
 
-bool ReflectionObject::AssignFloat(float value) const
+inline bool ReflectionObject::AssignFloat(float value) const
 {
 	return typeInfo->AssignFloat(location, value);
 }
 
-bool ReflectionObject::AssignString(std::string value) const
+inline bool ReflectionObject::AssignString(std::string value) const
 {
 	return typeInfo->AssignString(location, value);
 }
 
-ErrorOr<ReflectionObject> ReflectionObject::GetAtKey(HString name) const
+inline ErrorOr<ReflectionObject> ReflectionObject::GetAtKey(HString name) const
 {
 	return typeInfo->GetAtKey(location, name);
 }
 
-bool ReflectionObject::InsertKey(HString name) const
+inline bool ReflectionObject::InsertKey(HString name) const
 {
 	return typeInfo->InsertKey(location, name);
 }
 
-ErrorOr<ReflectionObject> ReflectionObject::GetAtIndex(int index) const
+inline ErrorOr<ReflectionObject> ReflectionObject::GetAtIndex(int index) const
 {
 	return typeInfo->GetAtIndex(location, index);
 }
 
-bool ReflectionObject::PushBackDefault() const
+inline bool ReflectionObject::PushBackDefault() const
 {
 	return typeInfo->PushBackDefault(location);
 }
 
-bool ReflectionObject::ArrayEnd() const
+inline bool ReflectionObject::ArrayEnd() const
 {
 	return typeInfo->ArrayEnd(location);
 }
 
-ErrorOr<std::string> ReflectionObject::ToString() const
+inline ErrorOr<std::string> ReflectionObject::ToString() const
 {
 	return typeInfo->ToString(location);
 }
-
-struct ReflectionContext
-{
-	ReflectionContext* parentContext;
-	TypeInfo* typeInfo;
-	byte* object;
-	// could put function to call here after being done as an optional member
-	// which can be used for constructing the object not in place and then copying
-};
 
 } // namespace Reflection
 
