@@ -15,6 +15,7 @@ namespace Reflection
 template<typename T, typename Tag>
 struct TemplatedTypeInfo<NamedType<T, Tag>>
 {
+	// rmf todo: @implement ErrorOr for all of the api
 	template<typename TVal>
 	static bool Assign(NamedType<T, Tag>& obj, TVal value)
 	{
@@ -22,7 +23,6 @@ struct TemplatedTypeInfo<NamedType<T, Tag>>
 		auto pTypeInfo = dynamic_cast<TypeInfoCustomLeaf<T>*>(reflect.typeInfo);
 		if (pTypeInfo == nullptr)
 		{
-			// rmf todo: @implement ErrorOr for all of the api
 			return false;
 		}
 		return pTypeInfo->Assign(reflect.location, value);
@@ -36,15 +36,14 @@ struct TemplatedTypeInfo<NamedType<T, Tag>>
 			Assign<uint>,
 			Assign<int>,
 			Assign<float>,
-			Assign<std::string>
-		);
+			Assign<std::string>);
 
 		return &namedTypeInfo;
 	}
 };
 
 template<typename T, typename Tag>
-struct TemplatedTypeInfo<ValueCheckedType<T, Tag>>
+struct TemplatedTypeInfo<ValueCheckedType<T, Tag> >
 {
 	template<typename TVal>
 	static bool Assign(ValueCheckedType<T, Tag>& obj, TVal value)
@@ -53,21 +52,20 @@ struct TemplatedTypeInfo<ValueCheckedType<T, Tag>>
 		auto pTypeInfoLeaf = dynamic_cast<TypeInfoCustomLeaf<T>*>(pTypeInfo);
 		if (pTypeInfoLeaf == nullptr)
 		{
-			// rmf todo: @implement ErrorOr for all of the api
 			return false;
 		}
 		T unchecked{};
 		auto uncheckedReflect = Reflect(unchecked);
-		bool success = pTypeInfoLeaf->Assign(uncheckedReflect.location, value);
-		if (!success)
+		if (!pTypeInfoLeaf->Assign(uncheckedReflect.location, value))
 		{
 			return false;
 		}
-		if (!Tag::IsValid(unchecked))
+		auto result = ValueCheckedType<T, Tag>::TryCreate(unchecked);
+		if (result.IsError())
 		{
 			return false;
 		}
-		obj = ValueCheckedType<T, Tag>(unchecked);
+		obj = result.GetValue();
 		return true;
 	}
 
@@ -79,18 +77,14 @@ struct TemplatedTypeInfo<ValueCheckedType<T, Tag>>
 			Assign<uint>,
 			Assign<int>,
 			Assign<float>,
-			Assign<std::string>
-		);
+			Assign<std::string>);
 
 		return &namedTypeInfo;
 	}
 };
 
-
-
 } // namespace Reflection
 
 } // namespace Farb
-
 
 #endif // FARB_REFLECTION_WRAPPERS_H

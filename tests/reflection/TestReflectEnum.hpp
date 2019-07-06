@@ -21,7 +21,7 @@ public:
 	virtual bool RunTests() const override
 	{
 		ExampleEnum e = ExampleEnum::NegativeTwo;
-		ReflectionObject eReflect = ReflectionObject::Construct(e);
+		ReflectionObject eReflect = Reflect(e);
 		PrintTestName(eReflect);
 		assert(e == ExampleEnum::NegativeTwo);
 		bool success = eReflect.AssignString("One");

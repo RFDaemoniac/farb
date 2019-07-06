@@ -22,7 +22,7 @@ public:
 	virtual bool RunTests() const override
 	{
 		ExampleBaseStruct s;
-		ReflectionObject sReflect = ReflectionObject::Construct(s);
+		ReflectionObject sReflect = Reflect(s);
 		PrintTestName(sReflect);
 		assert(s.e1 == ExampleEnum::One);
 		assert(s.i2 == 2);

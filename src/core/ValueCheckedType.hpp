@@ -3,6 +3,7 @@
 
 #include <type_traits>
 
+#include "../reflection/ReflectionDeclare.h"
 #include "ErrorOr.hpp"
 #include "../utils/TypeInspection.hpp"
 
@@ -39,13 +40,13 @@ public:
 		return Tag::IsValid(value);
 	}
 
-	static ErrorOr<ValueCheckedType> TryCreate(T value)
+	static ErrorOr<ValueCheckedType> TryCreate(const T& value)
 	{
 		if (!Tag::IsValid(value))
 		{
-			return Error("Invalid Value: " + ToString(value));
+			return Error("Invalid Value: " + Reflection::ToString(value));
 		}
-		return new ValueCheckedType(value);
+		return ValueCheckedType(value);
 	}
 
 	// rmf todo: ideally this would be removed
@@ -53,15 +54,16 @@ public:
 		: value()
 	{ }
 
-	ValueCheckedType(const T& value)
-		: value(value)
-	{ }
-
 	ValueCheckedType(const ValueCheckedType& other)
 		: value(other.value)
 	{ }
 
 	const T& GetValue() { return value; }
+
+protected:
+	ValueCheckedType(const T& value)
+		: value(value)
+	{ }
 };
 
 } // namespace Farb

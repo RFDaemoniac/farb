@@ -22,7 +22,7 @@ public:
 	virtual bool RunTests() const override
 	{
 		std::vector<int> viTest;
-		ReflectionObject viReflect = ReflectionObject::Construct(viTest);
+		ReflectionObject viReflect = Reflect(viTest);
 		PrintTestName(viReflect);
 
 		bool nameMatches = viReflect.typeInfo->GetName() == "std::vector<int>";
@@ -46,7 +46,7 @@ public:
 		assert(success && viTest[0] == 2);
 
 		std::unordered_set<int> setTest;
-		ReflectionObject setReflect = ReflectionObject::Construct(setTest);
+		ReflectionObject setReflect = Reflect(setTest);
 		PrintTestName(setReflect);
 		assert(setTest.size() == 0);
 
@@ -65,7 +65,7 @@ public:
 		assert(success && setTest.size() == 1 && setTest.count(2));
 
 		std::unordered_map<std::string, int> mapTest;
-		ReflectionObject mapReflect = ReflectionObject::Construct(mapTest);
+		ReflectionObject mapReflect = Reflect(mapTest);
 		PrintTestName(mapReflect);
 		assert(mapTest.size() == 0);
 

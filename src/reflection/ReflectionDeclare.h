@@ -39,9 +39,10 @@ struct ReflectionObject
 		, typeInfo(other.typeInfo)
 	{ }
 
-	template<typename T>
-	static ReflectionObject Construct(T& object);
-
+	// rmf note: should these be const if they modify the values?
+	// even though it doesn't change the direct member
+	// it does change the value at location
+	// if it were a reference they wouldn't be const
 	bool AssignBool(bool value) const;
 	bool AssignUInt(uint value) const;
 	bool AssignInt(int value) const;
@@ -173,13 +174,7 @@ TypeInfo* GetTypeInfo(const T& obj)
 }
 
 template<typename T>
-std::string ToString(T& obj)
-{
-	return Reflect(obj).ToString();
-}
-
-template<typename T>
-ReflectionObject ReflectionObject::Construct(T& object)
+ReflectionObject Reflect(T& object)
 {
 	return ReflectionObject(
 		reinterpret_cast<byte*>(&object),
@@ -187,9 +182,18 @@ ReflectionObject ReflectionObject::Construct(T& object)
 }
 
 template<typename T>
-ReflectionObject Reflect(T& object)
+std::string ToString(const T& obj)
 {
-	return ReflectionObject::Construct(object);
+	// casting away const should be fine here because
+	// ToString and GetName both do not modify the underlying value
+	auto reflect = Reflect(const_cast<T&>(obj));
+	auto result = reflect.ToString();
+	if (result.IsError())
+	{
+		// rmf todo: log error
+		return "Uknown value of type " + reflect.GetName();
+	}
+	return result.GetValue();
 }
 
 bool ReflectionObject::AssignBool(bool value) const

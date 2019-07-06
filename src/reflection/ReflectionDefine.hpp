@@ -396,7 +396,7 @@ public:
 				+ std::to_string(t->size())
 				+ ".");
 		}
-		return ReflectionObject::Construct(pAt(*t, index));
+		return Reflect(pAt(*t, index));
 	}
 
 	virtual bool PushBackDefault(byte* obj) const override
@@ -437,7 +437,7 @@ struct TypeInfoTable : public TypeInfo
 		}
 
 		TVal& value = t->at(key);
-		return ReflectionObject::Construct(value);
+		return Reflect(value);
 	}
 
 	virtual bool InsertKey(byte* obj, HString name) const override
@@ -467,13 +467,12 @@ protected:
 	MemberInfo(HString name, TypeInfo* typeInfo)
 		: name(name)
 		, typeInfo(typeInfo)
-	{}
+	{ }
 
 public:
 	virtual ~MemberInfo() { }
 
-public:
-	virtual byte* GetLocation(T* t) const = 0;
+	virtual ReflectionObject Get(T* t) const = 0;
 };
 
 template<typename T, typename TMem>
@@ -486,12 +485,11 @@ public:
 	MemberInfoTyped(HString name, TMem T::* location)
 		: MemberInfo<T>(name, GetTypeInfo<TMem>())
 		, location(location)
-	{}
+	{ }
 
-	virtual byte* GetLocation(T* t) const override
+	virtual ReflectionObject Get(T* t) const override
 	{
-		TMem* pMem = &(t->*location);
-		return reinterpret_cast<byte*>(pMem);
+		return Reflect(t->*location);
 	}
 };
 
@@ -529,7 +527,7 @@ struct TypeInfoStruct : public TypeInfo
 		{
 			if (member->name == name)
 			{
-				return ReflectionObject(member->GetLocation(t), member->typeInfo);
+				return member->Get(t);
 			}
 		}
 
@@ -545,10 +543,8 @@ struct TypeInfoStruct : public TypeInfo
 	}
 };
 
-
 } // namespace Reflection
 
 } // namespace Farb
-
 
 #endif // FARB_REFLECTION_DEFINE_H
