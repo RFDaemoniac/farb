@@ -30,6 +30,19 @@ struct NamedType
 	NamedType()
 		: value()
 	{ }
+
+	NamedType(const T& value)
+		: value(value)
+	{ }
+
+	NamedType(const NamedType& other)
+		: value(other.value)
+	{ }
+
+	bool operator ==(const NamedType& other) const
+	{
+		return value == other.value;
+	}
 };
 
 } // namespace Farb

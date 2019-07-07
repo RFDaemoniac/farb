@@ -5,6 +5,7 @@
 #include "./reflection/TestReflectStruct.hpp"
 #include "./reflection/TestReflectContainers.hpp"
 #include "./reflection/TestReflectWrappers.hpp"
+#include "./serialization/TestDeserialize.hpp"
 /*
 g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 */
@@ -32,7 +33,8 @@ int main(void)
 		TestReflectEnum,
 		TestReflectStruct,
 		TestReflectContainers,
-		TestReflectWrappers>();
+		TestReflectWrappers,
+		TestDeserialize>();
 	
 	std::cout << "All Tests Passed" << std::endl;
 	return success;

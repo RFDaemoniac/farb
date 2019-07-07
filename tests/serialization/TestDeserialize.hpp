@@ -7,7 +7,8 @@
 #include "../../src/reflection/ReflectionDeclare.h"
 #include "../../src/reflection/ReflectionBasics.hpp"
 #include "../../src/reflection/ReflectionWrappers.hpp"
-#include "TestReflectDefinitions.hpp"
+#include "../reflection/TestReflectDefinitions.hpp"
+#include "../../src/serialization/DeserializationParser.hpp"
 
 namespace Farb
 {
@@ -16,14 +17,74 @@ using namespace Reflection;
 namespace Tests
 {
 
+template<typename T>
+void TestDeserializeValue(const T& initial, const T& expected, std::string jsonString)
+{
+	T test = initial;
+	assert(test == initial);
+	bool success = DeserializeString(jsonString, test);
+	farb_print(success && test == expected,
+		"deserialize value " + GetTypeInfo<T>()->GetName());
+	assert(success && test == expected);
+}
+
+template<typename T, typename TKey, typename TVal>
+void TestDeserializeContainer(
+	std::string jsonString,
+	int expectedSize,\
+	const std::pair<TKey, TVal>& expected1,
+	const std::pair<TKey, TVal>& expected2)
+{
+	T test;
+	assert(test.size() == 0);
+	bool success = DeserializeString(jsonString, test);
+	success = success
+		&& test.size() == expectedSize
+		&& test[expected1.first] == expected1.second
+		&& test[expected2.first] == expected2.second;
+	farb_print(success, "deserialize container " + GetTypeInfo<T>()->GetName());
+	assert(success);
+}
+
 class TestDeserialize : public ITest
 {
 public:
 	virtual bool RunTests() const override
 	{
-		{
-			
-		}
+		std::cout << "Deserialize" << std::endl;
+
+		TestDeserializeValue<bool>(false, true, "true");
+		TestDeserializeValue<uint>(0, 1, "1");
+		TestDeserializeValue<int>(0, -1, "-1");
+		TestDeserializeValue<float>(0.0, 10.5, "10.5");
+		TestDeserializeValue<std::string>("", "AB C", "\"AB C\"");
+		TestDeserializeValue<ExampleEnum>(ExampleEnum::Zero, ExampleEnum::One, "\"One\"");
+		TestDeserializeValue<ExampleNamedTypeInt>(
+			ExampleNamedTypeInt(0),
+			ExampleNamedTypeInt(1),
+			"1");
+		TestDeserializeValue<ExampleBaseStruct>(
+			ExampleBaseStruct(ExampleEnum::Zero, 0),
+			ExampleBaseStruct(ExampleEnum::One, 1),
+			"{\"e1\": \"One\", \"i2\": 1 }");
+
+		TestDeserializeContainer<std::vector<int>, int, int>(
+			"[0,1, 2, 3,4]",
+			5, {0, 0}, {4, 4});
+
+		TestDeserializeContainer<std::unordered_map<std::string, int>, std::string, int>(
+			"{\"Zero\": 0, \"One\": 1, \"Two\": 2}",
+			3, {"Zero", 0}, {"Two", 2});
+
+		TestDeserializeContainer<std::vector<ExampleBaseStruct>, int, ExampleBaseStruct>(
+			"["
+			"	{\"e1\": \"One\", \"i2\": 1 },"
+			"	{\"e1\": \"Two\", \"i2\": 2 }"
+			"]",
+			2,
+			{0, ExampleBaseStruct(ExampleEnum::One, 1)},
+			{1, ExampleBaseStruct(ExampleEnum::Two, 2)});
+
 
 		return true;
 	}

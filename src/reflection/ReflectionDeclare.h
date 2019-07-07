@@ -131,21 +131,21 @@ struct TemplatedTypeInfo
 };
 
 //template <class T>
-//using has_typeInfo = decltype(T::typeInfo);
+//using has_GetStaticTypeInfo = decltype(T::typeInfo);
 
 template <class T, typename = void>
-struct has_typeInfo : std::false_type {};
+struct has_GetStaticTypeInfo : std::false_type {};
 
 template<typename T>
-struct has_typeInfo<T, void_t<decltype(T::typeInfo)> > : std::true_type {};
+struct has_GetStaticTypeInfo<T, void_t<decltype(T::GetStaticTypeInfo)> > : std::true_type {};
 
 template <typename T>
 inline TypeInfo* GetTypeInfo()
 {
-	//if constexpr (std::experimental::is_detected<has_typeInfo, T>::value)
-	if constexpr (has_typeInfo<T>::value)
+	//if constexpr (std::experimental::is_detected<has_GetStaticTypeInfo, T>::value)
+	if constexpr (has_GetStaticTypeInfo<T>::value)
 	{
-		return &T::typeInfo;
+		return T::GetStaticTypeInfo();
 	}
 	else
 	{

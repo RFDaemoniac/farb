@@ -79,39 +79,58 @@ struct ExampleBaseStruct
 	ExampleBaseStruct()
 		: e1(ExampleEnum::One)
 		, i2(2)
-	{}
+	{ }
 
-	static TypeInfoStruct<ExampleBaseStruct> typeInfo;
-	virtual TypeInfo* GetInstanceTypeInfo() const { return &typeInfo; }
-};
+	ExampleBaseStruct(ExampleEnum e1, int i2)
+		: e1(e1)
+		, i2(i2)
+	{ }
 
-TypeInfoStruct<ExampleBaseStruct> ExampleBaseStruct::typeInfo = TypeInfoStruct<ExampleBaseStruct> {
-	"ExampleBaseStruct",
-	nullptr,
-	std::vector<MemberInfo<ExampleBaseStruct>*> {
-		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::e1)> {"e1", &ExampleBaseStruct::e1},
-		new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::i2)> {"i2", &ExampleBaseStruct::i2}
-	},
+	ExampleBaseStruct(const ExampleBaseStruct& other)
+		: e1(other.e1)
+		, i2(other.i2)
+	{ }
+
+	bool operator ==(const ExampleBaseStruct& other)
+	{
+		return e1 == other.e1 && i2 == other.i2;
+	}
+
+	static TypeInfo* GetStaticTypeInfo()
+	{
+		static auto typeInfo = TypeInfoStruct<ExampleBaseStruct> {
+			"ExampleBaseStruct",
+			nullptr,
+			std::vector<MemberInfo<ExampleBaseStruct>*> {
+				new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::e1)> {"e1", &ExampleBaseStruct::e1},
+				new MemberInfoTyped<ExampleBaseStruct, decltype(ExampleBaseStruct::i2)> {"i2", &ExampleBaseStruct::i2}
+			},
+		};
+		return &typeInfo;
+	}	
+	virtual TypeInfo* GetInstanceTypeInfo() const { return GetStaticTypeInfo(); }
 };
 
 struct ExampleDerivedStruct : public ExampleBaseStruct
 {
 	ExampleEnum e3;
 	int i4;
-
-	static TypeInfoStruct<ExampleDerivedStruct> typeInfo;
-	virtual TypeInfo* GetInstanceTypeInfo() const override { return &typeInfo; }
-};
-
-TypeInfoStruct<ExampleDerivedStruct> ExampleDerivedStruct::typeInfo {
-	"ExampleDerivedStruct",
-	Reflection::GetTypeInfo<ExampleBaseStruct>(),
-	std::vector<MemberInfo<ExampleDerivedStruct>*> {
-		new MemberInfoTyped<ExampleDerivedStruct, decltype(ExampleDerivedStruct::e3)> {"e3", &ExampleDerivedStruct::e3},
-		new MemberInfoTyped<ExampleDerivedStruct, decltype(ExampleDerivedStruct::i4)> {"i4", &ExampleDerivedStruct::i4}
+	
+	static TypeInfo* GetStaticTypeInfo()
+	{
+		static auto typeInfo = TypeInfoStruct<ExampleDerivedStruct> {
+			"ExampleDerivedStruct",
+			Reflection::GetTypeInfo<ExampleBaseStruct>(),
+			std::vector<MemberInfo<ExampleDerivedStruct>*> {
+				new MemberInfoTyped<ExampleDerivedStruct, decltype(ExampleDerivedStruct::e3)> {"e3", &ExampleDerivedStruct::e3},
+				new MemberInfoTyped<ExampleDerivedStruct, decltype(ExampleDerivedStruct::i4)> {"i4", &ExampleDerivedStruct::i4}
+			}
+		};
+		return &typeInfo;
 	}
-};
 
+	virtual TypeInfo* GetInstanceTypeInfo() const override { return GetStaticTypeInfo(); }
+};
 
 } // namespace Tests
 

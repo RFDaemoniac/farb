@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <stack>
 #include <string>
 
 #include "../../lib/json/json.hpp"
@@ -35,6 +36,7 @@ struct ReflectionContext
 
 class DeserializationParser : public json::json_sax_t
 {
+public:
 	std::stack<ReflectionContext> stack;
 
 	DeserializationParser(ReflectionObject root)
@@ -47,6 +49,7 @@ class DeserializationParser : public json::json_sax_t
 	bool null()
 	{
 		// rmf todo: @implement null
+		Error("json null not implemented").Log();
 		return false;
 	}
 
@@ -131,9 +134,9 @@ class DeserializationParser : public json::json_sax_t
 	{
 		if (stack.empty()) { return false; }
 		if (!stack.top().inObject) { return false; }
-		bool success = stack.top().InsertKey(val);
+		bool success = stack.top().reflect.InsertKey(val);
 		if (!success) { return false; }
-		auto result = stack.top().GetAtKey(val);
+		auto result = stack.top().reflect.GetAtKey(val);
 		if (result.IsError())
 		{
 			result.GetError().Log();
@@ -147,7 +150,7 @@ class DeserializationParser : public json::json_sax_t
 	bool parse_error(
 		std::size_t position,
 		const std::string& last_token,
-		const detail::exception& ex)
+		const nlohmann::detail::exception& ex)
 	{
 		Error(
 			"Parse Error into object of type "
@@ -157,7 +160,8 @@ class DeserializationParser : public json::json_sax_t
 			+ " at: "
 			+ std::to_string(position)
 			+ " exception: "
-			+ ex.what());
+			+ ex.what()).Log();
+		return false;
 	}
 
 protected:
@@ -184,7 +188,7 @@ protected:
 		}
 		stack.top().arrayIndex++;
 
-		auto result = stack.top().reflect.GetAtIndex(arrayIndex);
+		auto result = stack.top().reflect.GetAtIndex(stack.top().arrayIndex);
 		if (result.IsError())
 		{
 			result.GetError().Log();
@@ -201,7 +205,7 @@ template<typename T>
 bool DeserializeFile(std::string filePath, T& object)
 {
 	DeserializationParser parser(Reflect(object));
-	ifstream input;
+	std::ifstream input;
 	input.open(filePath);
 	return json::sax_parse(input, &parser);
 }

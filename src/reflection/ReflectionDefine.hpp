@@ -329,6 +329,8 @@ public:
 // we could also consider having an alternative interface for copying values
 // rather than reflecting in place
 
+// should also consider fixed length arrays that can't use PushBackDefault
+
 
 template<typename T, typename TVal>
 struct TypeInfoArray : public TypeInfo
