@@ -36,7 +36,7 @@ struct AssignFunctionTyped : public AssignFunction<T>
 		|| std::is_same<TArg, float>::value
 		|| std::is_same<TArg, std::string>::value,
 		"AssignFunctionTyped can only accept values of type bool, uint, int, float, or std::string");
-	friend class AssignFunction<T>;
+	friend struct AssignFunction<T>;
 protected:
 	bool (*pAssign)(T&, TArg);
 
@@ -56,7 +56,7 @@ struct AssignFunctionTypedMember : public AssignFunction<T>
 		|| std::is_same<TArg, float>::value
 		|| std::is_same<TArg, std::string>::value,
 		"AssignFunctionTypedMember can only accept values of type bool, uint, int, float, or std::string");
-	friend class AssignFunction<T>;
+	friend struct AssignFunction<T>;
 protected:
 	bool (T::*pAssign)(TArg);
 
@@ -461,7 +461,7 @@ struct TypeInfoStruct;
 template<typename T>
 struct MemberInfo
 {
-	friend class TypeInfoStruct<T>;
+	friend struct TypeInfoStruct<T>;
 protected:
 	HString name;
 	TypeInfo* typeInfo;

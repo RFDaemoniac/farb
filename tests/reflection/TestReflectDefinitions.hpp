@@ -91,6 +91,9 @@ struct ExampleBaseStruct
 		, i2(other.i2)
 	{ }
 
+	virtual ~ExampleBaseStruct()
+	{ }
+
 	bool operator ==(const ExampleBaseStruct& other)
 	{
 		return e1 == other.e1 && i2 == other.i2;
@@ -115,7 +118,7 @@ struct ExampleDerivedStruct : public ExampleBaseStruct
 {
 	ExampleEnum e3;
 	int i4;
-	
+
 	static TypeInfo* GetStaticTypeInfo()
 	{
 		static auto typeInfo = TypeInfoStruct<ExampleDerivedStruct> {

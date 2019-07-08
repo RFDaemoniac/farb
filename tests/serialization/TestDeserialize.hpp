@@ -22,7 +22,7 @@ void TestDeserializeValue(const T& initial, const T& expected, std::string jsonS
 {
 	T test = initial;
 	assert(test == initial);
-	bool success = DeserializeString(jsonString, test);
+	bool success = DeserializeString(jsonString, Reflect(test));
 	farb_print(success && test == expected,
 		"deserialize value " + GetTypeInfo<T>()->GetName());
 	assert(success && test == expected);
@@ -37,7 +37,7 @@ void TestDeserializeContainer(
 {
 	T test;
 	assert(test.size() == 0);
-	bool success = DeserializeString(jsonString, test);
+	bool success = DeserializeString(jsonString, Reflect(test));
 	success = success
 		&& test.size() == expectedSize
 		&& test[expected1.first] == expected1.second
@@ -86,7 +86,7 @@ public:
 			{1, ExampleBaseStruct(ExampleEnum::Two, 2)});
 
 		ExampleBaseStruct testStructFromFile;
-		bool success = DeserializeFile("../../tests/files/TestExampleBaseStruct.json", testStructFromFile);
+		bool success = DeserializeFile("./tests/files/TestExampleBaseStruct.json", Reflect(testStructFromFile));
 		success = success && testStructFromFile == ExampleBaseStruct(ExampleEnum::One, 1);
 		farb_print(success, "deserialize from file value " + GetTypeInfo<ExampleBaseStruct>()->GetName());
 		assert(success);

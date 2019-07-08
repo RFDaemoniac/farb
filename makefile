@@ -1,5 +1,6 @@
 CXX=g++
 CXXFLAGS=-std=c++17 -Wall -pedantic -Wfatal-errors
+#-Wgnu-statement-expression
 #CXXFLAGS=-std=c++17 -Wall -pedantic -I./lib -I./src/headers
 
 #all: tmp/farb.o
@@ -45,3 +46,5 @@ build/bin/test: $(TEST_DEPENDENCY_FILES) build/tmp/RunTests.o build/tmp/Deserial
 
 clean:
 	rm build/tmp/* build/bin/*
+
+# g++ -std=c++17 -Wall -pedantic -Wfatal-errors -o ./build/bin/test tests/RunTests.cpp src/serialization/Deserialization.cpp
