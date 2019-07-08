@@ -1,6 +1,3 @@
-#ifndef FARB_DESERIALIZATION_PARSER_HPP
-#define FARB_DESERIALIZATION_PARSER_HPP
-
 #include <fstream>
 #include <iostream>
 #include <stack>
@@ -221,5 +218,3 @@ bool DeserializeFile(std::string filePath, ReflectionObject reflect)
 }
 
 } // namespace Farb
-
-#endif // FARB_DESERIALIZATION_PARSER_HPP

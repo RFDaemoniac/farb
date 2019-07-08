@@ -25,7 +25,7 @@ CXXFLAGS=-std=c++17 -Wall -pedantic -Wfatal-errors
 
 VPATH = tests/reflection tests/serialization tests/ src/core src/reflection src/serialization src/utils
 
-TEST_DEPENDENCY_FILES = $(wildcard tests/**/*.hpp)
+TEST_DEPENDENCY_FILES = $(wildcard **/*.hpp)
 
 LIB_FILES = $(wildcard lib/**/*.*)
 

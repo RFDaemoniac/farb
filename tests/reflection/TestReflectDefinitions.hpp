@@ -46,16 +46,6 @@ enum class ExampleEnum
 	Two = 2
 };
 
-static TypeInfoEnum<ExampleEnum> exampleEnumTypeInfo {
-	"ExampleEnum",
-	std::vector<std::pair <std::string, int> >{
-		{"NegativeTwo", -2},
-		{"Zero", 0},
-		{"One", 1},
-		{"Two", 2}
-	},
-};
-
 } // namespace Tests
 
 using namespace Tests;
@@ -63,6 +53,15 @@ using namespace Tests;
 template <>
 TypeInfo* Reflection::GetTypeInfo<ExampleEnum>()
 {
+	static TypeInfoEnum<ExampleEnum> exampleEnumTypeInfo {
+		"ExampleEnum",
+		std::vector<std::pair <std::string, int> >{
+			{"NegativeTwo", -2},
+			{"Zero", 0},
+			{"One", 1},
+			{"Two", 2}
+		},
+	};
 	return &exampleEnumTypeInfo;
 }
 
