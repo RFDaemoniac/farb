@@ -61,7 +61,7 @@ struct ReflectionObject
 
 struct TypeInfo
 {	
-	friend class ReflectionObject;
+	friend struct ReflectionObject;
 protected:
 	HString name;
 

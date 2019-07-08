@@ -8,7 +8,7 @@
 #include "../../src/reflection/ReflectionBasics.hpp"
 #include "../../src/reflection/ReflectionWrappers.hpp"
 #include "../reflection/TestReflectDefinitions.hpp"
-#include "../../src/serialization/DeserializationParser.hpp"
+#include "../../src/serialization/Deserialization.h"
 
 namespace Farb
 {
@@ -85,6 +85,11 @@ public:
 			{0, ExampleBaseStruct(ExampleEnum::One, 1)},
 			{1, ExampleBaseStruct(ExampleEnum::Two, 2)});
 
+		ExampleBaseStruct testStructFromFile;
+		bool success = DeserializeFile("../../tests/files/TestExampleBaseStruct.json", testStructFromFile);
+		success = success && testStructFromFile == ExampleBaseStruct(ExampleEnum::One, 1);
+		farb_print(success, "deserialize from file value " + GetTypeInfo<ExampleBaseStruct>()->GetName());
+		assert(success);
 
 		return true;
 	}
