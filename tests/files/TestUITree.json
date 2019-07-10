@@ -1,3 +1,24 @@
 {
-	
+	"image": "",
+	"text":
+	{
+		"contents": "Test",
+		"size": 18
+	},
+	"input":
+	{
+		"type": "MouseClick",
+		"response" : "ClickButton"
+	},
+	"top": 100,
+	"left": "10 %",
+	"height": "FitContents",
+	"width": "80 %",
+	"children":
+	[
+		{
+			"text": { "contents": "Child" }
+		}
+	]
+
 }

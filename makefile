@@ -44,8 +44,8 @@ build/tmp/tigr.o: lib/tigr/tigr.c
 build/tmp/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-build/bin/test: $(TEST_DEPENDENCY_FILES) build/tmp/RunTests.o build/tmp/Deserialization.o build/tmp/InterfaceReflectionDefintions.o
-	$(CXX) $(CXXFLAGS) -o ./build/bin/test build/tmp/RunTests.o build/tmp/Deserialization.o build/tmp/InterfaceReflectionDefintions.o
+build/bin/test: $(TEST_DEPENDENCY_FILES) build/tmp/RunTests.o build/tmp/Deserialization.o build/tmp/InterfaceReflectionDefinitions.o build/tmp/ReflectionBasics.o
+	$(CXX) $(CXXFLAGS) -o ./build/bin/test build/tmp/RunTests.o build/tmp/Deserialization.o build/tmp/InterfaceReflectionDefinitions.o build/tmp/ReflectionBasics.o
 
 clean:
 	rm build/tmp/* build/bin/*

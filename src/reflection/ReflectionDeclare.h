@@ -140,7 +140,7 @@ template<typename T>
 struct has_GetStaticTypeInfo<T, void_t<decltype(T::GetStaticTypeInfo)> > : std::true_type {};
 
 template <typename T>
-inline TypeInfo* GetTypeInfo()
+TypeInfo* GetTypeInfo()
 {
 	//if constexpr (std::experimental::is_detected<has_GetStaticTypeInfo, T>::value)
 	if constexpr (has_GetStaticTypeInfo<T>::value)

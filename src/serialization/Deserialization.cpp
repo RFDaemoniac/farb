@@ -5,6 +5,7 @@
 
 #include "../../lib/json/json.hpp"
 
+#include "../reflection/ReflectionBasics.h"
 #include "Deserialization.h"
 
 namespace Farb
@@ -57,6 +58,7 @@ public:
 	{
 		if (!UpkeepForValueStart()) { return false; }
 		bool success = stack.top().reflect.AssignBool(val);
+		if (!success) { Error("Assign bool failed " + ToString(val)).Log(); }
 		stack.pop();
 		return success;
 	}
@@ -66,6 +68,7 @@ public:
 	{
 		if (!UpkeepForValueStart()) { return false; }
 		bool success = stack.top().reflect.AssignInt(val);
+		if (!success) { Error("Assign int failed " + ToString((int)val)).Log(); }
 		stack.pop();
 		return success;
 	}
@@ -74,6 +77,7 @@ public:
 	{
 		if (!UpkeepForValueStart()) { return false; }
 		bool success = stack.top().reflect.AssignUInt(val);
+		if (!success) { Error("Assign uint failed " + ToString((uint)val)).Log(); }
 		stack.pop();
 		return success;
 	}
@@ -83,6 +87,7 @@ public:
 	{
 		if (!UpkeepForValueStart()) { return false; }
 		bool success = stack.top().reflect.AssignFloat(val);
+		if (!success) { Error("Assign float failed " + s).Log(); }
 		stack.pop();
 		return success;
 	}
@@ -92,6 +97,7 @@ public:
 	{
 		if (!UpkeepForValueStart()) { return false; }
 		bool success = stack.top().reflect.AssignString(val);
+		if (!success) { Error("Assign string failed " + val).Log(); }
 		stack.pop();
 		return success;
 	}
@@ -168,10 +174,12 @@ protected:
 	{
 		if (stack.empty())
 		{
+			Error("Stack is empty").Log();
 			return false;
 		}
 		if (stack.top().inArray && !ArrayNextSetup())
 		{
+			Error("Array setup failed").Log();
 			return false;
 		}
 		return true;

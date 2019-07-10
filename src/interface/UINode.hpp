@@ -30,11 +30,12 @@ struct Image
 	{
 		if (bitmap != nullptr)
 		{
-			tigrFree(bitmap);
+			// commented out because linking tigr is something I want to do later
+			// tigrFree(bitmap);
 		}
 	}
 
-	static TypeInfo* GetStaticTypeInfo();
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 enum class Units
@@ -57,7 +58,7 @@ struct Scalar
 		, units(Units::None)
 	{ }
 
-	static TypeInfo* GetStaticTypeInfo();
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 struct Text
@@ -67,7 +68,7 @@ struct Text
 	Scalar size;
 	FontName fontName;
 
-	static TypeInfo* GetStaticTypeInfo();
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 enum class SizeType
@@ -87,7 +88,7 @@ struct Size
 		, type(SizeType::FitContents)
 	{ }
 
-	static TypeInfo* GetStaticTypeInfo();
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 struct Node
@@ -101,10 +102,14 @@ struct Node
 	Size height, width;
 	std::vector<Node> children;
 
-	static TypeInfo* GetStaticTypeInfo();
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 } // namespace UI
+
+
+template <> Reflection::TypeInfo* Reflection::GetTypeInfo<UI::Units>();
+template <> Reflection::TypeInfo* Reflection::GetTypeInfo<UI::SizeType>();
 
 } // namespace Farb
 

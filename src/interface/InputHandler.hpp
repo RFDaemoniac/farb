@@ -2,6 +2,7 @@
 #define FARB_INPUT_HANDLER_HPP
 
 #include "../core/NamedType.hpp"
+#include "../reflection/ReflectionDeclare.h"
 
 namespace Farb
 {
@@ -52,10 +53,15 @@ struct Handler
 	};
 
 	Type inputType;
+	std::string responseFunctionName;
 	Result (*response)(Event);
+
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 } // namespace Input
+
+template <> Reflection::TypeInfo* Reflection::GetTypeInfo<Input::Type>();
 
 } // namespace Farb
 

@@ -5,7 +5,6 @@
 
 #include "../RegisterTest.hpp"
 #include "../../src/reflection/ReflectionDeclare.h"
-#include "../../src/reflection/ReflectionBasics.hpp"
 #include "../../src/reflection/ReflectionWrappers.hpp"
 #include "TestReflectDefinitions.hpp"
 

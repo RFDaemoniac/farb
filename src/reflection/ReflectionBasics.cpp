@@ -1,6 +1,3 @@
-#ifndef FARB_REFLECTION_BASICS_H
-#define FARB_REFLECTION_BASICS_H
-
 #include <limits.h>
 
 #include "ReflectionDeclare.h"
@@ -136,6 +133,3 @@ TypeInfo* GetTypeInfo<std::string>()
 } // namespace Reflection
 
 } // namespace Farb
-
-
-#endif // FARB_REFLECTION_BASICS_H
