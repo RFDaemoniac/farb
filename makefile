@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-std=c++17 -Wall -pedantic -Wfatal-errors
+CXXFLAGS=-std=c++17 -Wall -pedantic -Wfatal-errors -Wno-gnu-statement-expression -Wno-unused-function
 #-Wgnu-statement-expression
 #CXXFLAGS=-std=c++17 -Wall -pedantic -I./lib -I./src/headers
 
@@ -23,7 +23,7 @@ CXXFLAGS=-std=c++17 -Wall -pedantic -Wfatal-errors
 #tmp/tigr.o: lib/tigr/tigr.c
 #	gcc -c -o tmp/tigr.o lib/tigr/tigr.c
 
-VPATH = tests/reflection tests/serialization tests/ src/core src/reflection src/serialization src/utils
+VPATH = tests/reflection tests/serialization tests/ src/core src/reflection src/serialization src/utils src/interface
 
 TEST_DEPENDENCY_FILES = $(wildcard **/*.hpp)
 
@@ -38,11 +38,14 @@ all: build/bin/test
 test: build/bin/test
 	./build/bin/test
 
+build/tmp/tigr.o: lib/tigr/tigr.c
+	gcc -c -o build/tmp/tigr.o lib/tigr/tigr.c
+
 build/tmp/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-build/bin/test: $(TEST_DEPENDENCY_FILES) build/tmp/RunTests.o build/tmp/Deserialization.o
-	$(CXX) $(CXXFLAGS) -o ./build/bin/test build/tmp/RunTests.o build/tmp/Deserialization.o
+build/bin/test: $(TEST_DEPENDENCY_FILES) build/tmp/RunTests.o build/tmp/Deserialization.o build/tmp/InterfaceReflectionDefintions.o
+	$(CXX) $(CXXFLAGS) -o ./build/bin/test build/tmp/RunTests.o build/tmp/Deserialization.o build/tmp/InterfaceReflectionDefintions.o
 
 clean:
 	rm build/tmp/* build/bin/*

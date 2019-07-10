@@ -1,6 +1,8 @@
 #ifndef FARB_INPUT_HANDLER_HPP
 #define FARB_INPUT_HANDLER_HPP
 
+#include "../core/NamedType.hpp"
+
 namespace Farb
 {
 
@@ -17,11 +19,23 @@ enum class Type
 	KeyPress
 };
 
+struct PixelTag
+{
+	static HString GetName() { return "Pixel"; }
+};
+
+using Pixel = NamedType<uint, PixelTag>;
+
+struct WindowCoordinate
+{
+	Pixel x, y;
+};
+
 struct Event
 {
-	InputType type;
+	Type type;
 	char key;
-	std::pair<uint, uint> mousePosition;
+	WindowCoordinate mousePosition;
 };
 
 struct Handler
@@ -37,9 +51,8 @@ struct Handler
 		{ }
 	};
 
-	InputType inputType;
-	Result(*)()
-
+	Type inputType;
+	Result (*response)(Event);
 };
 
 } // namespace Input

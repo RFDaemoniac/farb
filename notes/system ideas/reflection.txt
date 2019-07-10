@@ -3,8 +3,10 @@ more thorough tests
 	multiple indexes for arrays
 	members of every type
 	assign every type combination
-	make constructors and accessors constexpr, if possible
-	table key of type other than HString, but still must be constructable from HString
+make constructors and accessors constexpr, if possible
+table key of type other than HString, but still must be constructable from HString
+member deserialization instead of just type deserialization
+type that can be deserialized in multiple ways i.e. assign string and begin object
 
 
 References:

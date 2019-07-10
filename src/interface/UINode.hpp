@@ -1,12 +1,17 @@
-#ifndef FARB_UI_NODE_H
-#define FARB_UI_NODE_H
+#ifndef FARB_UI_NODE_HPP
+#define FARB_UI_NODE_HPP
 
 #include <string>
+
+#include "../../lib/tigr/tigr.h"
 
 #include "../reflection/ReflectionDeclare.h"
 #include "../core/BuiltinTypedefs.h"
 #include "../core/NamedType.hpp"
 #include "../core/ValueCheckedType.hpp"
+#include "../utils/StringExtensions.hpp"
+#include "Fonts.hpp"
+#include "InputHandler.hpp"
 
 namespace Farb
 {
@@ -14,26 +19,33 @@ namespace Farb
 namespace UI
 {
 
-struct FontNameTag
-{
-	static HString GetName() { return "FontName"; }
-}
-
-using FontName = NamedType<std::string, FontNameTag>;
-
 struct Image
 {
 	std::string filePath;
-	// rmf todo: loaded value as ?, check tigr
-}
+	// this pointer is owned by image
+	// but needs to be deleted using tigrFree
+	Tigr* bitmap;
+
+	~Image()
+	{
+		if (bitmap != nullptr)
+		{
+			tigrFree(bitmap);
+		}
+	}
+
+	static TypeInfo* GetStaticTypeInfo();
+};
 
 enum class Units
 {
 	None,
 	Pixels,
-	PercentOfParentMin, // could have width, height, min, max
-	PercentOfScreenMin
-}
+	// could add width, height, min, max
+	// these work based on dimension being specified
+	PercentOfParent,
+	PercentOfScreen
+};
 
 struct Scalar
 {
@@ -45,8 +57,8 @@ struct Scalar
 		, units(Units::None)
 	{ }
 
-	bool ParseAssign(const std::string& value);
-}
+	static TypeInfo* GetStaticTypeInfo();
+};
 
 struct Text
 {
@@ -54,14 +66,16 @@ struct Text
 	std::string cachedParsedText;
 	Scalar size;
 	FontName fontName;
-}
+
+	static TypeInfo* GetStaticTypeInfo();
+};
 
 enum class SizeType
 {
 	Scalar,
 	FitContents,
 	FitChildren
-}
+};
 
 struct Size
 {
@@ -70,24 +84,28 @@ struct Size
 
 	Size()
 		: scalar()
-		, SizeType(SizeType::FitContents)
+		, type(SizeType::FitContents)
 	{ }
 
-	bool ParseAssign(const std::string& value);
-}
+	static TypeInfo* GetStaticTypeInfo();
+};
 
 struct Node
 {
-	std::string text;
+	Input::Handler inputHandler;
+	Image image;
+	Text text;
 	Scalar top, left, right, bottom;
 	// rmf note: Nodes intentionally do not have a scale, just a size
 	// there is no transform applied to children. Adding one might be a mistake
 	Size height, width;
 	std::vector<Node> children;
-}
+
+	static TypeInfo* GetStaticTypeInfo();
+};
 
 } // namespace UI
 
 } // namespace Farb
 
-#endif // FARB_UI_NODE_H
+#endif // FARB_UI_NODE_HPP

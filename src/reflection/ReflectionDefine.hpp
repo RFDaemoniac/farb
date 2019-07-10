@@ -495,6 +495,12 @@ public:
 	}
 };
 
+template<typename T, typename TMem>
+MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location)
+{
+	return new MemberInfoTyped<T, TMem>(name, location);
+}
+
 template<typename T>
 struct TypeInfoStruct : public TypeInfo
 {
