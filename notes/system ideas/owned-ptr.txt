@@ -1,0 +1,9 @@
+for members of structs that behave like refs but are re-assignable
+like unique_ptr but copy assignment will perform new rather than requiring move
+so that you can use implicit copy constructors of structs that contain members that are owned_ptr<T>
+
+take a look at shared_ptr/weak_ptr and the other stb pointer classes
+
+this is called a value_ptr and implementations already exist
+https://hackernoon.com/value-ptr-the-missing-c-smart-pointer-1f515664153e
+https://github.com/loopperfect/valuable

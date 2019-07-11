@@ -39,5 +39,6 @@ int main(void)
 		TestDeserializeUITree>();
 	
 	std::cout << "All Tests Passed" << std::endl;
-	return success;
+	if (success) return 0;
+	return 1;
 }
