@@ -13,7 +13,7 @@ using HString = std::string;
 using uint = unsigned int;
 using byte = unsigned char;
 
-// not actually a builtin but I treat it as such
+// not actually a builtin but treated as such
 template<typename T>
 using value_ptr = valuable::value_ptr<T>;
 
