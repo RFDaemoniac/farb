@@ -95,12 +95,6 @@ struct Size
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
-struct ComputedDimensions
-{
-	int x, y;
-	int width, height;
-}
-
 struct Node
 {
 	Input::Handler inputHandler;

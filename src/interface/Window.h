@@ -3,6 +3,7 @@
 
 #include "UINode.h"
 #include "../core/ErrorOr.hpp"
+#include "../core/Containers.hpp"
 
 namespace Farb
 {
@@ -14,12 +15,11 @@ struct Window
 {
 	std::unique_ptr<Tigr, tigrFree> window;
 
-	void Render(const Node& tree);
+	bool Render(const Node& tree);
 
 private:
 	ErrorOr<void> Render(
-		const ComputedDimensions& window,
-		const ComputedDimensions& parent,
+		const Tree<ComputedDimensions>& dimensions,
 		const Node& node);
 
 	ErrorOr<ComputedDimensions> ComputeDimensions(

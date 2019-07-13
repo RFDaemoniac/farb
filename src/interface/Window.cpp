@@ -6,15 +6,23 @@ namespace Farb
 namespace UI
 {
 
+struct ComputedDimensions
+{
+	int x, y;
+	int width, height;
+}
+
 bool Window::Render(const Node& tree)
 {
-	ComputedDimensions dimensions{ 0, 0, window->w, window->h };
-	auto result = Render(dimensions, dimensions, tree);
+	ComputedDimensions root{ 0, 0, window->w, window->h };
+	auto result = ComputeDimensions(root, root, tree);
 	if (result.IsError())
 	{
 		result.GetError().Log();
 		return false;
 	}
+	Tree<ComputedDimensions> dimensions = result.GetValue();
+	Render(dimensions, tree);
 	return true;
 }
 
@@ -35,9 +43,8 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 
 ErrorOr<ComputedDimensions> ComputeDimensions(ComputedDimensions& window, ComputedDimensions& parent, const Node& node)
 {
-	ComputedDimensions dimensions;
-
-	bool 
+	Tree<ComputeDimensions> dimensionsTree;
+	ComputedDimensions& dimensions = dimensions.value;
 
 	switch(node.width.type)
 	{
@@ -58,14 +65,42 @@ ErrorOr<ComputedDimensions> ComputeDimensions(ComputedDimensions& window, Comput
 
 	foreach (auto & child : children)
 	{
-		auto result = Render(window, dimensions, child);
+		auto result = ComputeDimensions(window, dimensions, child);
+		if (result.IsError())
+		{
+			return result.GetError();
+		}
+		dimensionsTree.children.push_back(result.GetValue());
+	}
+	return dimensionsTree;
+}
+
+ErrorOr<void> Window::Render(
+	const Tree<ComputedDimensions>& dimensions,
+	const Node& node)
+{
+	//rmf todo: actually render contents
+	if (!node.image.filePath.empty())
+	{
+		
+	}
+	if (!node.text.unparsedText.empty())
+	{
+
+	}
+	if (dimensions.children.size() != node.children.size())
+	{
+		return Error("Dimensions have different shape then ui node tree");
+	}
+	for (int i = 0; i < dimensions.children.size(); ++i)
+	{
+		auto result = Render(dimensions.children[i], node.children[i]);
 		if (result.IsError())
 		{
 			return result.GetError();
 		}
 	}
-
-	return dimensions;
+	return;
 }
 
 } // namespace UI
