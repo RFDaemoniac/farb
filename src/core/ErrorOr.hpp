@@ -91,6 +91,16 @@ public:
 	}
 };
 
+#define CHECK_RETURN(functionCall) \
+	({ \
+		auto result = functionCall; \
+		if (result.IsError()) \
+		{ \
+			return result.GetError(); \
+		} \
+		result.GetValue(); \
+	})
+
 } // namespace Farb
 
 #endif // FARB_ERROR_OR_HPP

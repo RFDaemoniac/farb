@@ -1,5 +1,4 @@
-
-#include "UINode.hpp"
+#include "UINode.h"
 #include "Fonts.hpp"
 #include "InputHandler.hpp"
 #include "../reflection/ReflectionDeclare.h"
@@ -125,8 +124,6 @@ struct UISizeAssign
 
 TypeInfo* UI::Size::GetStaticTypeInfo()
 {
-	
-
 	static auto typeInfo = TypeInfoCustomLeaf<UI::Size>::Construct(
 		"UI::Size",
 		UISizeAssign::Parse,

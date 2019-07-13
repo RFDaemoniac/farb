@@ -1,5 +1,5 @@
-#ifndef FARB_UI_NODE_HPP
-#define FARB_UI_NODE_HPP
+#ifndef FARB_UI_NODE_H
+#define FARB_UI_NODE_H
 
 #include <string>
 
@@ -22,18 +22,22 @@ namespace UI
 struct Image
 {
 	std::string filePath;
-	// this pointer is owned by image
-	// but needs to be deleted using tigrFree
-	Tigr* bitmap;
 
-	~Image()
-	{
-		if (bitmap != nullptr)
-		{
-			// commented out because linking tigr is something I want to do later
-			// tigrFree(bitmap);
-		}
-	}
+	// the same loaded file could be used by any number of Image objects
+	// rather than loading copies
+	// but needs to be deleted using tigrFree
+	// which we pass in to the costructor of std::shared_ptr
+	std::shared_ptr<Tigr> bitmap;
+
+	Image()
+		: filepath()
+		, bitmap(nullptr, tigrFree)
+	{ }
+
+	Image(Tigr* bitmap)
+		: filePath()
+		, bitmap(bitmap, tigrFree)
+	{ }
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
@@ -91,6 +95,12 @@ struct Size
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
+struct ComputedDimensions
+{
+	int x, y;
+	int width, height;
+}
+
 struct Node
 {
 	Input::Handler inputHandler;
@@ -99,10 +109,13 @@ struct Node
 	Scalar top, left, right, bottom;
 	// rmf note: Nodes intentionally do not have a scale, just a size
 	// there is no transform applied to children. Adding one might be a mistake
-	Size height, width;
+	Size width, height;
 	std::vector<Node> children;
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
+
+	// rmf todo: postload verification that none of the children use PercentParent
+	// if the SizeType is FitChildren
 };
 
 } // namespace UI
@@ -113,4 +126,4 @@ template <> Reflection::TypeInfo* Reflection::GetTypeInfo<UI::SizeType>();
 
 } // namespace Farb
 
-#endif // FARB_UI_NODE_HPP
+#endif // FARB_UI_NODE_H
