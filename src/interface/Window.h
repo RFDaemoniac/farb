@@ -1,6 +1,8 @@
 #ifndef FARB_WINDOW_H
 #define FARB_WINDOW_H
 
+#include <string>
+
 #include "UINode.h"
 #include "../core/ErrorOr.hpp"
 #include "../core/Containers.hpp"
@@ -11,22 +13,29 @@ namespace Farb
 namespace UI
 {
 
+struct TigrDeleter
+{
+	void operator()(Tigr* bmp) { tigrFree(bmp); }
+};
+
 struct Window
 {
-	std::unique_ptr<Tigr, tigrFree> window;
+	std::unique_ptr<Tigr, TigrDeleter> window;
+
+	Window(int width, int height, std::string name);
 
 	bool Render(const Node& tree);
 
 private:
-	ErrorOr<void> Render(
-		const Tree<ComputedDimensions>& dimensions,
+	ErrorOr<Success> Render(
+		const Tree<Dimensions>& dimensions,
 		const Node& node);
 
-	ErrorOr<ComputedDimensions> ComputeDimensions(
-		const ComputedDimensions& window,
-		const ComputedDimensions& parent,
+	ErrorOr<Tree<Dimensions> > ComputeDimensions(
+		const Dimensions& window,
+		const Dimensions& parent,
 		const Node& node);
-}
+};
 
 } // namespace UI
 

@@ -1,3 +1,5 @@
+#include "../../lib/tigr/tigr.h"
+
 #include "UINode.h"
 #include "Fonts.hpp"
 #include "InputHandler.hpp"
@@ -19,9 +21,13 @@ TypeInfo* UI::Image::GetStaticTypeInfo()
 		static bool String(UI::Image& object, std::string value)
 		{
 			object.filePath = value;
-			// rmf todo: value check type for whether it exists?
-			// could also do loading here, too
-			return true;
+			object.bitmap.reset(tigrLoadImage(object.filePath.c_str()), tigrFree);
+			if (object.bitmap != nullptr)
+			{
+				object.spriteLocation.width = object.bitmap->w;
+				object.spriteLocation.height = object.bitmap->h;
+			}
+			return object.bitmap != nullptr;
 		}
 	};
 

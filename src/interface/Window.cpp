@@ -6,23 +6,28 @@ namespace Farb
 namespace UI
 {
 
-struct ComputedDimensions
+Window::Window(int width, int height, std::string name)
+	: window(nullptr)
 {
-	int x, y;
-	int width, height;
+	window.reset(tigrWindow(width, height, name.c_str(), TIGR_3X));
 }
 
 bool Window::Render(const Node& tree)
 {
-	ComputedDimensions root{ 0, 0, window->w, window->h };
+	Dimensions root{ 0, 0, window->w, window->h };
 	auto result = ComputeDimensions(root, root, tree);
 	if (result.IsError())
 	{
 		result.GetError().Log();
 		return false;
 	}
-	Tree<ComputedDimensions> dimensions = result.GetValue();
-	Render(dimensions, tree);
+	Tree<Dimensions> dimensions = result.GetValue();
+	auto renderResult = Render(dimensions, tree);
+	if (renderResult.IsError())
+	{
+		renderResult.GetError().Log();
+		return false;
+	}
 	return true;
 }
 
@@ -41,10 +46,10 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 	}
 }
 
-ErrorOr<ComputedDimensions> ComputeDimensions(ComputedDimensions& window, ComputedDimensions& parent, const Node& node)
+ErrorOr<Tree<Dimensions> > ComputeDimensions(Dimensions& window, Dimensions& parent, const Node& node)
 {
-	Tree<ComputeDimensions> dimensionsTree;
-	ComputedDimensions& dimensions = dimensions.value;
+	Tree<Dimensions> dimensionsTree;
+	Dimensions& dimensions = dimensions.value;
 
 	switch(node.width.type)
 	{
@@ -75,18 +80,31 @@ ErrorOr<ComputedDimensions> ComputeDimensions(ComputedDimensions& window, Comput
 	return dimensionsTree;
 }
 
-ErrorOr<void> Window::Render(
-	const Tree<ComputedDimensions>& dimensions,
-	const Node& node)
+ErrorOr<Success> Window::Render(
+	const Tree<Dimensions>& dimensions,
+	const node& node)
 {
-	//rmf todo: actually render contents
 	if (!node.image.filePath.empty())
 	{
-		
+		if (dimensions.width != node.image.spriteLocation.width
+			|| dimensions.height != node.image.spriteLocation.height)
+		{
+			return Error("Can't scale or 9-slice images yet");
+		}
+		// rmf todo: impelement 9 slicing, scaling, and sprite maps, (and rotation?)
+		tigrBlit(
+			window,
+			node.image.bitmap,
+			dimensions.x,
+			dimensions.y,
+			node.image.spriteLocation.x,
+			node.image.spriteLocation.y,
+			dimensions.width,
+			dimensions.height);
 	}
 	if (!node.text.unparsedText.empty())
 	{
-
+		//rmf todo: 
 	}
 	if (dimensions.children.size() != node.children.size())
 	{
@@ -100,7 +118,7 @@ ErrorOr<void> Window::Render(
 			return result.GetError();
 		}
 	}
-	return;
+	return Success();
 }
 
 } // namespace UI

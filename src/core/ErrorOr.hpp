@@ -8,6 +8,11 @@
 namespace Farb
 {
 
+// just used for ErrorOr<Success>
+struct Success
+{
+};
+
 template<typename T>
 struct ErrorOr
 {

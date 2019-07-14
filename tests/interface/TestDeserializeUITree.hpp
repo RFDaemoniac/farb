@@ -5,7 +5,7 @@
 
 #include "../RegisterTest.hpp"
 #include "../../src/reflection/ReflectionDeclare.h"
-#include "../../src/interface/UINode.hpp"
+#include "../../src/interface/UINode.h"
 #include "../../src/serialization/Deserialization.h"
 
 namespace Farb

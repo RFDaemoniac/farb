@@ -1,5 +1,5 @@
 {
-	"image": "",
+	"image": "./tests/files/button.png",
 	"text":
 	{
 		"contents": "Test",

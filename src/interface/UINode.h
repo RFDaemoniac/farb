@@ -19,6 +19,20 @@ namespace Farb
 namespace UI
 {
 
+struct Dimensions
+{
+	int x, y;
+	int width, height;
+
+	Dimensions()
+		: x(0), y(0), width(0), height(0)
+	{ }
+
+	Dimensions(int x, int y, int width, int height)
+		: x(x), y(y), width(width), height(height)
+	{ }
+};
+
 struct Image
 {
 	std::string filePath;
@@ -29,14 +43,17 @@ struct Image
 	// which we pass in to the costructor of std::shared_ptr
 	std::shared_ptr<Tigr> bitmap;
 
+	Dimensions spriteLocation;
+
 	Image()
-		: filepath()
+		: filePath()
 		, bitmap(nullptr, tigrFree)
 	{ }
 
 	Image(Tigr* bitmap)
 		: filePath()
 		, bitmap(bitmap, tigrFree)
+		, spriteLocation(0, 0, bitmap->w, bitmap->h)
 	{ }
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();

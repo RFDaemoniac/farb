@@ -33,7 +33,7 @@ struct Tree
 			return children[path[pathIndex]].GetAtPath(path, pathIndex + 1);
 		}
 	}
-}
+};
 
 } // namespace Farb
 
