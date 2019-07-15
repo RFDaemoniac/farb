@@ -2,6 +2,7 @@
 #define FARB_UI_NODE_H
 
 #include <string>
+#include <memory>
 
 #include "../../lib/tigr/tigr.h"
 
@@ -18,6 +19,11 @@ namespace Farb
 
 namespace UI
 {
+
+struct TigrDeleter
+{
+	void operator()(Tigr* bmp) { tigrFree(bmp); }
+};
 
 struct Dimensions
 {
@@ -47,7 +53,8 @@ struct Image
 
 	Image()
 		: filePath()
-		, bitmap(nullptr, tigrFree)
+		, bitmap()
+		, spriteLocation()
 	{ }
 
 	Image(Tigr* bitmap)

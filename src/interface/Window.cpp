@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "Window.h"
 
 namespace Farb
@@ -33,10 +35,10 @@ bool Window::Render(const Node& tree)
 
 ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 {
-	switch(scalar.type)
+	switch(scalar.units)
 	{
 	case Units::Pixels:
-		return static_cast<int>(round(node.width.scalar.amount));
+		return static_cast<int>(round(scalar.amount));
 	case Units::PercentOfParent:
 		return static_cast<int>(round(scalar.amount * parentSize));
 	case Units::PercentOfScreen:
@@ -46,10 +48,13 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 	}
 }
 
-ErrorOr<Tree<Dimensions> > ComputeDimensions(Dimensions& window, Dimensions& parent, const Node& node)
+ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
+	const Dimensions& window,
+	const Dimensions& parent,
+	const Node& node)
 {
 	Tree<Dimensions> dimensionsTree;
-	Dimensions& dimensions = dimensions.value;
+	Dimensions& dimensions = dimensionsTree.value;
 
 	switch(node.width.type)
 	{
@@ -68,7 +73,7 @@ ErrorOr<Tree<Dimensions> > ComputeDimensions(Dimensions& window, Dimensions& par
 		return Error("UI::Node height sizetype other than scalar");
 	}
 
-	foreach (auto & child : children)
+	for (auto & child : node.children)
 	{
 		auto result = ComputeDimensions(window, dimensions, child);
 		if (result.IsError())
@@ -82,25 +87,25 @@ ErrorOr<Tree<Dimensions> > ComputeDimensions(Dimensions& window, Dimensions& par
 
 ErrorOr<Success> Window::Render(
 	const Tree<Dimensions>& dimensions,
-	const node& node)
+	const Node& node)
 {
 	if (!node.image.filePath.empty())
 	{
-		if (dimensions.width != node.image.spriteLocation.width
-			|| dimensions.height != node.image.spriteLocation.height)
+		if (dimensions.value.width != node.image.spriteLocation.width
+			|| dimensions.value.height != node.image.spriteLocation.height)
 		{
 			return Error("Can't scale or 9-slice images yet");
 		}
 		// rmf todo: impelement 9 slicing, scaling, and sprite maps, (and rotation?)
 		tigrBlit(
-			window,
-			node.image.bitmap,
-			dimensions.x,
-			dimensions.y,
+			window.get(),
+			node.image.bitmap.get(),
+			dimensions.value.x,
+			dimensions.value.y,
 			node.image.spriteLocation.x,
 			node.image.spriteLocation.y,
-			dimensions.width,
-			dimensions.height);
+			dimensions.value.width,
+			dimensions.value.height);
 	}
 	if (!node.text.unparsedText.empty())
 	{

@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "../../lib/tigr/tigr.h"
 
 #include "UINode.h"

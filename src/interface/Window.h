@@ -13,11 +13,6 @@ namespace Farb
 namespace UI
 {
 
-struct TigrDeleter
-{
-	void operator()(Tigr* bmp) { tigrFree(bmp); }
-};
-
 struct Window
 {
 	std::unique_ptr<Tigr, TigrDeleter> window;

@@ -25,9 +25,19 @@ private:
 	};
 
 public:
+	ErrorOr(const Error& error)
+		: isError(true)
+		, error(error)
+	{ }
+
 	ErrorOr(Error&& error)
 		: isError(true)
 		, error(std::move(error))
+	{ }
+
+	ErrorOr(const T& value)
+		: isError(false)
+		, value(value)
 	{ }
 
 	ErrorOr(T&& value)
