@@ -48,15 +48,6 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 	}
 }
 
-ErrorOr<Success> ComputeChildrenDimensions(
-	Tree<Dimensions> dimensionsTree,
-	const Dimensions& window,
-	const Dimensions& parent,
-	const Node& node)
-{
-	
-}
-
 ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	const Dimensions& window,
 	const Dimensions& parent,
@@ -71,15 +62,17 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	Tree<Dimensions> dimensionsTree;
 	Dimensions& dimensions = dimensionsTree.value;
 
+	std::set<DimensionAttributes> computedAttributes;
+
 	bool gotWidth = false;
 	bool gotHeight = false;
 
-	if (node.spec & NodeDimension::Left)
+	if (node.spec & NodeSpec::Left)
 	{
 		dimensions.x = CHECK_RETURN(ComputeScalar(
 			window.width, parent.width, node.left));
 
-		if (node.spec & NodeDimension::Right)
+		if (node.spec & NodeSpec::Right)
 		{
 			int x2 = parent.width - CHECK_RETURN(ComputeScalar(
 				window.width, parent.width, node.right));
@@ -87,11 +80,11 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 			gotWidth = true;
 		}
 	}
-	if (node.spec & NodeDimension::Top)
+	if (node.spec & NodeSpec::Top)
 	{
 		dimensions.y = ComputeScalar(window.height, parent.height, node.top);
 
-		if (node.spec & NodeDimension::Bottom)
+		if (node.spec & NodeSpec::Bottom)
 		{
 			int y2 = parent.height - CHECK_RETURN(ComputeScalar(
 				window.height, parent.height, node.bottom));
@@ -112,17 +105,23 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 			window.height, parent.height, node.width.height));
 		gotHeight = true;
 	}
-	if (!gotHeight
-		&& !gotWidth
-		&& node.width.type == SizeType::FitContents
-		&& node.height.type == SizeType::FitContents
+	if ((!gotWidth && node.width.type == SizeType::FitContents
+			|| !gotHeight && node.height.type == SizeType::FitContents)
 		&& !node.image.filePath.empty())
 	{
-		dimensions.width = node.image.spriteLocation.width;
-		gotWidth = true;
-		dimensions.height = node.image.spriteLocation.height;
-		gotHeight = true;
+		if (!gotHeight
+			&& !gotWidth
+			&& node.width.type == SizeType::FitContents
+			&& node.height.type == SizeType::FitContents
+			&& !node.image.filePath.empty())
+		{
+			dimensions.width = node.image.spriteLocation.width;
+			gotWidth = true;
+			dimensions.height = node.image.spriteLocation.height;
+			gotHeight = true;
+		}
 	}
+	
 
 	{
 		switch(node.width.type)
@@ -165,12 +164,9 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 
 	for (auto & child : node.children)
 	{
-		auto result = ComputeDimensions(window, dimensions, child);
-		if (result.IsError())
-		{
-			return result.GetError();
-		}
-		dimensionsTree.children.push_back(result.GetValue());
+		auto childTree = CHECK_RETURN(ComputeDimensions(
+			window, dimensions, child));
+		dimensionsTree.children.push_back(childTree);
 	}
 
 	if (!gotWidth && node.width.type == SizeType::FitChildren)

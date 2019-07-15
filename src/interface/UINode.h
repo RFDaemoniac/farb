@@ -4,13 +4,12 @@
 #include <string>
 #include <memory>
 
-#include "../../lib/tigr/tigr.h"
-
 #include "../reflection/ReflectionDeclare.h"
 #include "../core/BuiltinTypedefs.h"
 #include "../core/NamedType.hpp"
 #include "../core/ValueCheckedType.hpp"
 #include "../utils/StringExtensions.hpp"
+#include "TirgExtensions.h"
 #include "Fonts.hpp"
 #include "InputHandler.hpp"
 
@@ -19,25 +18,6 @@ namespace Farb
 
 namespace UI
 {
-
-struct TigrDeleter
-{
-	void operator()(Tigr* bmp) { tigrFree(bmp); }
-};
-
-struct Dimensions
-{
-	int x, y;
-	int width, height;
-
-	Dimensions()
-		: x(0), y(0), width(0), height(0)
-	{ }
-
-	Dimensions(int x, int y, int width, int height)
-		: x(x), y(y), width(width), height(height)
-	{ }
-};
 
 struct Image
 {
@@ -59,7 +39,7 @@ struct Image
 
 	Image(Tigr* bitmap)
 		: filePath()
-		, bitmap(bitmap, tigrFree)
+		, bitmap(bitmap, TigrDeleter)
 		, spriteLocation(0, 0, bitmap->w, bitmap->h)
 	{ }
 
@@ -119,7 +99,7 @@ struct Size
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
-enum class NodeDimension
+enum class NodeSpec
 {
 	None   = 1 << 0,
 	Top    = 1 << 1,
@@ -130,18 +110,18 @@ enum class NodeDimension
 	Height = 1 << 6
 };
 
-inline NodeDimension operator|(NodeDimension a, NodeDimension b)
+inline NodeSpec operator|(NodeSpec a, NodeSpec b)
 {
-	return static_cast<NodeDimension>(static_cast<int>(a) | static_cast<int>(b));
+	return static_cast<NodeSpec>(static_cast<int>(a) | static_cast<int>(b));
 }
 
-inline NodeDimension& operator|=(NodeDimension& a, const NodeDimension& b)
+inline NodeSpec& operator|=(NodeSpec& a, const NodeSpec& b)
 {
 	a = a | b;
 	return a;
 }
 
-inline bool operator&(NodeDimension a, NodeDimension b)
+inline bool operator&(NodeSpec a, NodeSpec b)
 {
 	return static_cast<bool>(static_cast<int>(a) & static_cast<int>(b));
 }
@@ -155,8 +135,11 @@ struct Node
 	// rmf note: Nodes intentionally do not have a scale, just a size
 	// there is no transform applied to children. Adding one might be a mistake
 	Size width, height;
-	NodeDimension spec = NodeDimension::None;
 	std::vector<Node> children;
+
+	// these are not reflected and are runtime only
+	NodeSpec spec = NodeSpec::None;
+	DimensionAttribute[5] dependencyOrdering;
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 

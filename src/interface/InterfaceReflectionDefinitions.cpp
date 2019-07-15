@@ -23,7 +23,7 @@ TypeInfo* UI::Image::GetStaticTypeInfo()
 		static bool String(UI::Image& object, std::string value)
 		{
 			object.filePath = value;
-			object.bitmap.reset(tigrLoadImage(object.filePath.c_str()), tigrFree);
+			object.bitmap.reset(tigrLoadImage(object.filePath.c_str()), TigrDeleter);
 			if (object.bitmap != nullptr)
 			{
 				object.spriteLocation.width = object.bitmap->w;
@@ -144,33 +144,33 @@ TypeInfo* UI::Size::GetStaticTypeInfo()
 
 bool UI::Node::PostLoad(Node& node)
 {
-	NodeDimension& spec = node.spec;
-	if (node.top.units != Units::None) spec |= NodeDimension::Top;
-	if (node.left.units != Units::None) spec |= NodeDimension::Left;
-	if (node.right.units != Units::None) spec |= NodeDimension::Right;
-	if (node.bottom.units != Units::None) spec |= NodeDimension::Bottom;
+	NodeSpec& spec = node.spec;
+	if (node.top.units != Units::None) spec |= NodeSpec::Top;
+	if (node.left.units != Units::None) spec |= NodeSpec::Left;
+	if (node.right.units != Units::None) spec |= NodeSpec::Right;
+	if (node.bottom.units != Units::None) spec |= NodeSpec::Bottom;
 
 	if (node.width.type != SizeType::Scalar
 		|| node.width.scalar.units != Units::None)
 	{
-		spec |= NodeDimension::Width;
+		spec |= NodeSpec::Width;
 	}
 	if (node.height.type != SizeType::Scalar
 		|| node.height.scalar.units != Units::None)
 	{
-		spec |= NodeDimension::Height;
+		spec |= NodeSpec::Height;
 	}
 
-	if (spec & NodeDimension::Top
-		&& spec & NodeDimension::Bottom
-		&& spec & NodeDimension::Height)
+	if (spec & NodeSpec::Top
+		&& spec & NodeSpec::Bottom
+		&& spec & NodeSpec::Height)
 	{
 		Error("UI::Node should specify at most two of top, bottom, and height").Log();
 		return false;
 	}
-	if (spec & NodeDimension::Left
-		&& spec & NodeDimension::Right
-		&& spec & NodeDimension::Width)
+	if (spec & NodeSpec::Left
+		&& spec & NodeSpec::Right
+		&& spec & NodeSpec::Width)
 	{
 		Error("UI::Node should specify at most two of left, right, and width").Log();
 		return false;
@@ -183,6 +183,85 @@ bool UI::Node::PostLoad(Node& node)
 		Error("UI::Node should specify at most one of image and text").Log();
 		return false;
 	}
+
+	int depIndex = 0;
+	std::set<DimensionAttribute> usedAttributes;
+
+	auto TryAdd = [=](DimensionAttribute next)
+	{
+		if (usedAttributes.count(next))
+		{
+			return;
+		}
+		node.dependencyOrdering[depIndex++] = next;
+		usedAttributes.insert(next);
+	}
+
+	if (spec & NodeSpec::Left)
+	{
+		TryAdd(DimensionAttribute::X);
+		if (spec & NodeSpec::Right)
+		{
+			TryAdd(DimensionAttribute::Width);
+		}
+	}
+	if (spec & NodeSpec::Top)
+	{
+		TryAdd(DimensionAttribute::Y);
+		if (spec & NodeSpec::Bottom)
+		{
+			TryAdd(DimensionAttribute::Height);
+		}
+	}
+	if (spec & NodeSpec::Width && node.width.type == SizeType::Scalar)
+	{
+		TryAdd(DimensionAttribute::Width);
+	}
+	if (spec & NodeSpec::Height && node.height.type == SizeType::Scalar)
+	{
+		TryAdd(DimensionAttribute::Height);
+	}
+	if (!node.image.filePath.empty())
+	{
+		if (spec & NodeSpec::Width && node.width.type == SizeType::FitContents)
+		{
+			TryAdd(DimensionAttribute::Width);
+		}
+		if (spec & NodeSpec::Height && node.height.type == SizeType::FitContents)
+		{
+			TryAdd(DimensionAttribute::Height)
+		}
+	}
+
+	if (!usedAttributes.count(DimensionAttribute::Width)
+		&& !usedAttributes.count(DimensionAttribute::Height))
+	{
+		Error("Could not parse dependencies for Width and Height").Log();
+		return false;
+	}
+
+	if (!node.text.unparsedText.empty())
+	{
+		if (spec & NodeSpec::Width && node.width.type == SizeType::FitContents)
+		{
+			TryAdd(DimensionAttribute::Width);
+		}
+		else if (spec & NodeSpec::Height && node.height.type == SizeType::FitContents)
+		{
+			TryAdd(DimensionAttribute::Height)
+		}
+	}
+
+	TryAdd(DimensionAttribute::Children);
+
+	if (usedAttributes.size() < 5)
+	{
+		TryAdd(DimensionAttribute::Width);
+		TryAdd(DimensionAttribute::X);
+		TryAdd(DimensionAttribute::Height);
+		TryAdd(DimensionAttribute::Y);
+	}
+
 	return true;
 }
 

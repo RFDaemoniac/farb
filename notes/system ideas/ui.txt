@@ -1,0 +1,8 @@
+how to do animations?
+I like css's animated properties over time
+Keyframes also seems like a good abstraction
+as well as tweening functions
+
+
+html rendering engine as example
+https://limpet.net/mbrubeck/2014/09/17/toy-layout-engine-6-block.html
