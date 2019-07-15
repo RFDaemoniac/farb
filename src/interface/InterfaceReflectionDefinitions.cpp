@@ -142,6 +142,50 @@ TypeInfo* UI::Size::GetStaticTypeInfo()
 	return &typeInfo;
 }
 
+bool UI::Node::PostLoad(Node& node)
+{
+	NodeDimension& spec = node.spec;
+	if (node.top.units != Units::None) spec |= NodeDimension::Top;
+	if (node.left.units != Units::None) spec |= NodeDimension::Left;
+	if (node.right.units != Units::None) spec |= NodeDimension::Right;
+	if (node.bottom.units != Units::None) spec |= NodeDimension::Bottom;
+
+	if (node.width.type != SizeType::Scalar
+		|| node.width.scalar.units != Units::None)
+	{
+		spec |= NodeDimension::Width;
+	}
+	if (node.height.type != SizeType::Scalar
+		|| node.height.scalar.units != Units::None)
+	{
+		spec |= NodeDimension::Height;
+	}
+
+	if (spec & NodeDimension::Top
+		&& spec & NodeDimension::Bottom
+		&& spec & NodeDimension::Height)
+	{
+		Error("UI::Node should specify at most two of top, bottom, and height").Log();
+		return false;
+	}
+	if (spec & NodeDimension::Left
+		&& spec & NodeDimension::Right
+		&& spec & NodeDimension::Width)
+	{
+		Error("UI::Node should specify at most two of left, right, and width").Log();
+		return false;
+	}
+
+	if (!node.image.filePath.empty()
+		&& !node.text.unparsedText.empty())
+	{
+		// rmf note: I think this is necessary because we only compute a single dimension
+		Error("UI::Node should specify at most one of image and text").Log();
+		return false;
+	}
+	return true;
+}
+
 TypeInfo* UI::Node::GetStaticTypeInfo()
 {
 	static TypeInfoStruct<UI::Node> typeInfo {
@@ -158,7 +202,8 @@ TypeInfo* UI::Node::GetStaticTypeInfo()
 			MakeMemberInfoTyped("height", &UI::Node::height),
 			MakeMemberInfoTyped("width", &UI::Node::width),
 			MakeMemberInfoTyped("children", &UI::Node::children)
-		}
+		},
+		UI::Node::PostLoad
 	};
 	return &typeInfo;
 }

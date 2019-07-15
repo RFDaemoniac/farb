@@ -1,10 +1,5 @@
 {
 	"image": "./tests/files/button.png",
-	"text":
-	{
-		"contents": "Test",
-		"size": 18
-	},
 	"input":
 	{
 		"type": "MouseClick",
@@ -17,7 +12,7 @@
 	"children":
 	[
 		{
-			"text": { "contents": "Child" }
+			"text": { "contents": "PushMe", "size": 18 }
 		}
 	]
 

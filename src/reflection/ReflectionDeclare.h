@@ -51,6 +51,7 @@ struct ReflectionObject
 
 	ErrorOr<ReflectionObject> GetAtKey(HString name) const;
 	bool InsertKey(HString name) const;
+	bool ObjectEnd() const;
 
 	ErrorOr<ReflectionObject> GetAtIndex(int index) const;
 	bool PushBackDefault() const;
@@ -93,6 +94,8 @@ public:
 	{
 		return Error(name + " GetAtIndex not impelmented.");
 	}
+	// rmf todo: why did I want this one to be true?
+	virtual bool ObjectEnd(byte* obj) const { return true; }
 
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 	virtual bool ArrayEnd(byte* obj) const { return false; }
@@ -234,6 +237,11 @@ inline bool ReflectionObject::InsertKey(HString name) const
 inline ErrorOr<ReflectionObject> ReflectionObject::GetAtIndex(int index) const
 {
 	return typeInfo->GetAtIndex(location, index);
+}
+
+inline bool ReflectionObject::ObjectEnd() const
+{
+	 return typeInfo->ObjectEnd(location);
 }
 
 inline bool ReflectionObject::PushBackDefault() const

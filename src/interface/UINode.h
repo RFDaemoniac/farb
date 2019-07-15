@@ -113,11 +113,38 @@ struct Size
 
 	Size()
 		: scalar()
-		, type(SizeType::FitContents)
+		, type(SizeType::Scalar)
 	{ }
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
+
+enum class NodeDimension
+{
+	None   = 1 << 0,
+	Top    = 1 << 1,
+	Left   = 1 << 2,
+	Right  = 1 << 3,
+	Bottom = 1 << 4,
+	Width  = 1 << 5,
+	Height = 1 << 6
+};
+
+inline NodeDimension operator|(NodeDimension a, NodeDimension b)
+{
+	return static_cast<NodeDimension>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline NodeDimension& operator|=(NodeDimension& a, const NodeDimension& b)
+{
+	a = a | b;
+	return a;
+}
+
+inline bool operator&(NodeDimension a, NodeDimension b)
+{
+	return static_cast<bool>(static_cast<int>(a) & static_cast<int>(b));
+}
 
 struct Node
 {
@@ -128,9 +155,12 @@ struct Node
 	// rmf note: Nodes intentionally do not have a scale, just a size
 	// there is no transform applied to children. Adding one might be a mistake
 	Size width, height;
+	NodeDimension spec = NodeDimension::None;
 	std::vector<Node> children;
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
+
+	static bool PostLoad(Node& node);
 
 	// rmf todo: postload verification that none of the children use PercentParent
 	// if the SizeType is FitChildren

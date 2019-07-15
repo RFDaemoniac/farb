@@ -48,18 +48,98 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 	}
 }
 
+ErrorOr<Success> ComputeChildrenDimensions(
+	Tree<Dimensions> dimensionsTree,
+	const Dimensions& window,
+	const Dimensions& parent,
+	const Node& node)
+{
+	
+}
+
 ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	const Dimensions& window,
 	const Dimensions& parent,
 	const Node& node)
 {
+	// ############# important
+	// rmf note: important remember that dimensions are with respect to the window
+	// not with respect to the parent.
+	// or rather, you need to pick one or the other.
+	// I guess with respect to the parent would be fine, we just need to remember that
+	// as we are rendering
 	Tree<Dimensions> dimensionsTree;
 	Dimensions& dimensions = dimensionsTree.value;
+
+	bool gotWidth = false;
+	bool gotHeight = false;
+
+	if (node.spec & NodeDimension::Left)
+	{
+		dimensions.x = CHECK_RETURN(ComputeScalar(
+			window.width, parent.width, node.left));
+
+		if (node.spec & NodeDimension::Right)
+		{
+			int x2 = parent.width - CHECK_RETURN(ComputeScalar(
+				window.width, parent.width, node.right));
+			dimensions.width = x2 - dimensions.x;
+			gotWidth = true;
+		}
+	}
+	if (node.spec & NodeDimension::Top)
+	{
+		dimensions.y = ComputeScalar(window.height, parent.height, node.top);
+
+		if (node.spec & NodeDimension::Bottom)
+		{
+			int y2 = parent.height - CHECK_RETURN(ComputeScalar(
+				window.height, parent.height, node.bottom));
+			dimensions.height = y2 - dimensions.y;
+			gotHeight = true;
+		}
+	}
+
+	if (!gotWidth && node.width.type == SizeType::Scalar)
+	{
+		dimensions.width = CHECK_RETURN(ComputeScalar(
+			window.width, parent.width, node.width.scalar));
+		gotWidth = true;
+	}
+	if (!gotHeight && node.height.type == SizeType::Scalar)
+	{
+		dimensions.height = CHECK_RETURN(ComputeScalar(
+			window.height, parent.height, node.width.height));
+		gotHeight = true;
+	}
+	if (!gotHeight
+		&& !gotWidth
+		&& node.width.type == SizeType::FitContents
+		&& node.height.type == SizeType::FitContents
+		&& !node.image.filePath.empty())
+	{
+		dimensions.width = node.image.spriteLocation.width;
+		gotWidth = true;
+		dimensions.height = node.image.spriteLocation.height;
+		gotHeight = true;
+	}
+
+	{
+		switch(node.width.type)
+		{
+		case SizeType::Scalar:
+			break;
+		case SizeType::FitContents:
+			if (!gotHeight) { return Error("UI::Node width fit contents"); }
+		default:
+			return Error("UI::Node width sizetype other than scalar");
+		}
+	}
 
 	switch(node.width.type)
 	{
 	case SizeType::Scalar:
-		dimensions.width = CHECK_RETURN(ComputeScalar(window.width, parent.width, node.width.scalar));
+		
 		break;
 	default:
 		return Error("UI::Node width sizetype other than scalar");
@@ -73,6 +153,16 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 		return Error("UI::Node height sizetype other than scalar");
 	}
 
+	// -1 is used as a sentinal value for parents dependent on child size
+	if (!gotWidth && node.width.type == SizeType::FitChildren)
+	{
+		dimensions.width = -1;
+	}
+	if (!gotHeight && node.height.type == SizeType::FitChildren)
+	{
+		dimensions.height = -1;
+	}
+
 	for (auto & child : node.children)
 	{
 		auto result = ComputeDimensions(window, dimensions, child);
@@ -82,6 +172,29 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 		}
 		dimensionsTree.children.push_back(result.GetValue());
 	}
+
+	if (!gotWidth && node.width.type == SizeType::FitChildren)
+	{
+		// get max width + x of all children
+	}
+	if (!gotHeight && node.height.type == SizeType::FitChildren)
+	{
+		// get max height + y of all children
+		// padding? could assume it's the same as the min y of all children
+	}
+
+	if ((parent.height > 0 && dimensions.height + dimensions.y > parent.height)
+		|| (parent.width > 0 && dimensions.width + dimensions.x > parent.width)
+		|| dimensions.x < 0
+		|| dimensions.y < 0
+		|| dimensions.width < 0
+		|| dimensions.height < 0)
+	{
+		// rmf todo: clipping for scrollers, parents dependent on child size
+		// there are several exceptions to this rule...
+		return Error("Child breaks bounds of parent");
+	}
+	
 	return dimensionsTree;
 }
 

@@ -115,6 +115,8 @@ public:
 		if (stack.empty()) { return false; }
 		if (!stack.top().inObject) { return false; }
 		stack.top().inObject = false;
+		bool success = stack.top().reflect.ObjectEnd();
+		if (!success) { return false; }
 		stack.pop();
 		return true;
 	}
@@ -130,6 +132,7 @@ public:
 	{
 		if (stack.empty()) { return false; }
 		stack.top().inArray = false;
+		stack.top().reflect.ArrayEnd();
 		stack.pop();
 		return true;
 	}

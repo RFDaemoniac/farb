@@ -508,14 +508,17 @@ struct TypeInfoStruct : public TypeInfo
 	// but I figured it was mostly unecessary for the others. Feel free to change in the future.
 	TypeInfo* parentType;
 	std::vector<MemberInfo<T>*> vMembers;
+	bool(*pPostLoad)(T& object);
 
 	TypeInfoStruct(
 		HString name,
 		TypeInfo* parentType,
-		std::vector<MemberInfo<T>*> members)
+		std::vector<MemberInfo<T>*> members,
+		bool(*pPostLoad)(T& object) = nullptr)
 		: TypeInfo(name)
 		, parentType(parentType)
 		, vMembers(members)
+		, pPostLoad(pPostLoad)
 	{}
 
 	~TypeInfoStruct()
@@ -554,6 +557,13 @@ struct TypeInfoStruct : public TypeInfo
 	virtual bool InsertKey(byte* obj, HString name) const override
 	{
 		return !(GetAtKey(obj, name).IsError());
+	}
+
+	virtual bool ObjectEnd(byte* obj) const override
+	{
+		if (pPostLoad == nullptr) return true;
+		T* t = reinterpret_cast<T*>(obj);
+		return pPostLoad(*t);
 	}
 };
 
