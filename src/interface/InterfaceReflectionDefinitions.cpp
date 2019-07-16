@@ -1,4 +1,5 @@
 #include <iostream>
+#include <set>
 
 #include "../../lib/tigr/tigr.h"
 
@@ -23,7 +24,7 @@ TypeInfo* UI::Image::GetStaticTypeInfo()
 		static bool String(UI::Image& object, std::string value)
 		{
 			object.filePath = value;
-			object.bitmap.reset(tigrLoadImage(object.filePath.c_str()), TigrDeleter);
+			object.bitmap.reset(tigrLoadImage(object.filePath.c_str()), TigrDeleter());
 			if (object.bitmap != nullptr)
 			{
 				object.spriteLocation.width = object.bitmap->w;
@@ -199,7 +200,7 @@ bool UI::Node::PostLoad(Node& node)
 	int depIndex = 0;
 	std::set<DimensionAttribute> usedAttributes;
 
-	auto TryAdd = [=](DimensionAttribute next)
+	auto TryAdd = [&](DimensionAttribute next)
 	{
 		if (usedAttributes.count(next))
 		{
@@ -207,7 +208,7 @@ bool UI::Node::PostLoad(Node& node)
 		}
 		node.dependencyOrdering[depIndex++] = next;
 		usedAttributes.insert(next);
-	}
+	};
 
 	if (spec & NodeSpec::Left)
 	{
@@ -241,7 +242,7 @@ bool UI::Node::PostLoad(Node& node)
 		}
 		if (spec & NodeSpec::Height && node.height.type == SizeType::FitContents)
 		{
-			TryAdd(DimensionAttribute::Height)
+			TryAdd(DimensionAttribute::Height);
 		}
 	}
 
@@ -260,7 +261,7 @@ bool UI::Node::PostLoad(Node& node)
 		}
 		else if (spec & NodeSpec::Height && node.height.type == SizeType::FitContents)
 		{
-			TryAdd(DimensionAttribute::Height)
+			TryAdd(DimensionAttribute::Height);
 		}
 	}
 
@@ -281,14 +282,14 @@ bool UI::Node::PostLoad(Node& node)
 	{
 		return true;
 	}
-	for (const auto & child : children)
+	for (const auto & child : node.children)
 	{
 		if (childrenBeforeWidth)
 		{
-			Scalar[] widthScalars{child.left, child.right, child.width.scalar}
+			Scalar widthScalars[]{child.left, child.right, child.width.scalar};
 			for (const auto & scalar : widthScalars)
 			{
-				if (scalar == Units::PercentOfParent)
+				if (scalar.units == Units::PercentOfParent)
 				{
 					Error("Scalar for child uses percent of parent width but parent width depends on children").Log();
 					return false;
@@ -297,10 +298,10 @@ bool UI::Node::PostLoad(Node& node)
 		}
 		if (childrenBeforeHeight)
 		{
-			Scalar[] heightScalars{child.top, child.bottom, child.height.scalar}
+			Scalar heightScalars[]{child.top, child.bottom, child.height.scalar};
 			for (const auto & scalar : heightScalars)
 			{
-				if (scalar == Units::PercentOfParent)
+				if (scalar.units == Units::PercentOfParent)
 				{
 					Error("Scalar for child uses percent of parent height but parent height depends on children").Log();
 					return false;

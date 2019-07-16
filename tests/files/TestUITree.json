@@ -12,7 +12,10 @@
 	"children":
 	[
 		{
+			"width": "100 %",
+			"height": "FitContents",
 			"text": { "contents": "PushMe", "size": 18 }
+
 		}
 	]
 

@@ -1,7 +1,7 @@
 #ifndef FARB_TIGR_EXTENSIONS_H
 #define FARB_TIGR_EXTENSIONS_H
 
-#include "tigr.h"
+#include "../../lib/tigr/tigr.h"
 
 namespace Farb
 {

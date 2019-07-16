@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <cmath>
 #include <limits>
+#include <set>
 
 #include "Window.h"
 
@@ -25,7 +27,7 @@ bool Window::Render(const Node& tree)
 		return false;
 	}
 	Tree<Dimensions> dimensions = result.GetValue();
-	auto renderResult = Render(dimensions, tree);
+	auto renderResult = Render(0, 0, dimensions, tree);
 	if (renderResult.IsError())
 	{
 		renderResult.GetError().Log();
@@ -65,9 +67,9 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	Dimensions& dimensions = dimensionsTree.value;
 	auto& spec = node.spec;
 
-	std::set<DimensionAttributes> computedAttributes;
+	std::set<DimensionAttribute> computedAttributes;
 
-	auto computeWidthFitContentsImage = [=]() -> ErrorOr<Success>
+	auto computeWidthFitContentsImage = [&]() -> ErrorOr<Success>
 	{
 		int maxWidth = std::numeric_limits<int>::max();
 		// rmf todo: could pass in explicitly whether parent width had been defined
@@ -81,9 +83,9 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 				padding += CHECK_RETURN(ComputeScalar(
 					window.width, parent.width, node.right));
 			}
-			maxWidth = min(maxWidth, parent.width - padding);
+			maxWidth = std::min(maxWidth, parent.width - padding);
 		}
-		if (computedAttributes.count(DimensionAttributes::Height))
+		if (computedAttributes.count(DimensionAttribute::Height))
 		{
 			// rmf todo: 9sliced images (don't need to maintain ratio)
 			float imageRatio =
@@ -96,22 +98,22 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 				// we should probably reduce height here, too?
 				// but what if Y has already been computed?
 				// figure it out later
-				return Error("Could not maintain aspect ratio of image " + node.image.filePath());
+				return Error("Could not maintain aspect ratio of image " + node.image.filePath);
 			}
 		}
 		else
 		{
-			dimensions.width = min(maxWidth, node.image.spriteLocation.width);
+			dimensions.width = std::min(maxWidth, node.image.spriteLocation.width);
 		}
 		return Success();
-	}
+	};
 
-	auto computeWidthFitContentsText = [=]() -> ErrorOr<Success>
+	auto computeWidthFitContentsText = [&]() -> ErrorOr<Success>
 	{
 		return Error("Text width FitContents not implemented");
-	}
+	};
 
-	auto computeHeightFitContentsImage = [=]() -> ErrorOr<Success>
+	auto computeHeightFitContentsImage = [&]() -> ErrorOr<Success>
 	{
 		int maxHeight = std::numeric_limits<int>::max();
 		// rmf todo: could pass in explicitly whether parent width had been defined
@@ -125,9 +127,9 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 				padding += CHECK_RETURN(ComputeScalar(
 					window.height, parent.height, node.bottom));
 			}
-			maxHeight = min(maxHeight, parent.height - padding);
+			maxHeight = std::min(maxHeight, parent.height - padding);
 		}
-		if (computedAttributes.count(DimensionAttributes::Width))
+		if (computedAttributes.count(DimensionAttribute::Width))
 		{
 			// rmf todo: 9sliced images (don't need to maintain ratio)
 			float imageRatio =
@@ -140,20 +142,20 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 				// we should probably reduce width here, too?
 				// but what if X has already been computed?
 				// figure it out later
-				return Error("Could not maintain aspect ratio of image " + node.image.filePath());
+				return Error("Could not maintain aspect ratio of image " + node.image.filePath);
 			}
 		}
 		else
 		{
-			dimensions.height = min(maxHeight, node.image.spriteLocation.height);
+			dimensions.height = std::min(maxHeight, node.image.spriteLocation.height);
 		}
 		return Success();
-	}
+	};
 
-	auto computeHeightFitContentsText = [=]() -> ErrorOr<Success>
+	auto computeHeightFitContentsText = [&]() -> ErrorOr<Success>
 	{
 		return Error("Text height FitContents not implemented");
-	}
+	};
 
 	// because the dependencyOrdering has already been computed
 	// we should be able to assume that the pre-requisites are available for use
@@ -161,7 +163,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	{
 		switch(attribute)
 		{
-		case DimensionAttributes::X:
+		case DimensionAttribute::X:
 		{
 			if (spec & NodeSpec::Left)
 			{
@@ -178,7 +180,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 			// default is 0;
 			break;
 		}
-		case DimensionAttributes::Y:
+		case DimensionAttribute::Y:
 		{
 			if (spec & NodeSpec::Top)
 			{
@@ -195,7 +197,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 			// default is 0;
 			break;
 		}
-		case DimensionAttributes::Width:
+		case DimensionAttribute::Width:
 		{
 			if (spec & NodeSpec::Width)
 			{
@@ -222,8 +224,8 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 					{
 						// rmf todo: bottom and right padding
 						// for now assume they are the same as top and left
-						rightPad = min(rightPad, childDim.x);
-						maxWidth = max(maxWidth, childDim.x + childDim.width);
+						rightPad = std::min(rightPad, childDim.value.x);
+						maxWidth = std::max(maxWidth, childDim.value.x + childDim.value.width);
 					}
 					if (maxWidth == 0 || rightPad == std::numeric_limits<int>::max())
 					{
@@ -249,7 +251,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 			}
 			break;
 		}
-		case DimensionAttributes::Height:
+		case DimensionAttribute::Height:
 			if (spec & NodeSpec::Height)
 			{
 				switch(node.width.type)
@@ -275,8 +277,8 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 					{
 						// rmf todo: bottom and right padding
 						// for now assume they are the same as top and left
-						bottomPad = min(bottomPad, childDim.y);
-						maxHeight = max(maxHeight, childDim.y + childDim.height);
+						bottomPad = std::min(bottomPad, childDim.value.y);
+						maxHeight = std::max(maxHeight, childDim.value.y + childDim.value.height);
 					}
 					if (maxHeight == 0 || bottomPad == std::numeric_limits<int>::max())
 					{
@@ -301,7 +303,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 				dimensions.height = parent.height - dimensions.y;
 			}
 			break;
-		case DimensionAttributes::Children:
+		case DimensionAttribute::Children:
 		{
 			for (auto & child : node.children)
 			{
@@ -330,14 +332,23 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	return dimensionsTree;
 }
 
+
 ErrorOr<Success> Window::Render(
+	int parentAbsoluteX,
+	int parentAbsoluteY,
 	const Tree<Dimensions>& dimensions,
 	const Node& node)
 {
+	tigrClear(window.get(), tigrRGB(0,0,0));
+	int absoluteX = parentAbsoluteX + dimensions.value.x;
+	int absoluteY = parentAbsoluteY + dimensions.value.y;
+	int width = dimensions.value.width;
+	int height = dimensions.value.height;
+
 	if (!node.image.filePath.empty())
 	{
-		if (dimensions.value.width != node.image.spriteLocation.width
-			|| dimensions.value.height != node.image.spriteLocation.height)
+		if (width != node.image.spriteLocation.width
+			|| height != node.image.spriteLocation.height)
 		{
 			return Error("Can't scale or 9-slice images yet");
 		}
@@ -345,16 +356,17 @@ ErrorOr<Success> Window::Render(
 		tigrBlit(
 			window.get(),
 			node.image.bitmap.get(),
-			dimensions.value.x,
-			dimensions.value.y,
+			absoluteX,
+			absoluteY,
 			node.image.spriteLocation.x,
 			node.image.spriteLocation.y,
-			dimensions.value.width,
-			dimensions.value.height);
+			width,
+			height);
 	}
 	if (!node.text.unparsedText.empty())
 	{
-		//rmf todo: 
+		//rmf todo: render text line by line
+		return Error("Rendering text is not yet impelmented");
 	}
 	if (dimensions.children.size() != node.children.size())
 	{
@@ -362,12 +374,17 @@ ErrorOr<Success> Window::Render(
 	}
 	for (int i = 0; i < dimensions.children.size(); ++i)
 	{
-		auto result = Render(dimensions.children[i], node.children[i]);
+		auto result = Render(
+			absoluteX,
+			absoluteY,
+			dimensions.children[i],
+			node.children[i]);
 		if (result.IsError())
 		{
 			return result.GetError();
 		}
 	}
+	tigrUpdate(window.get());
 	return Success();
 }
 

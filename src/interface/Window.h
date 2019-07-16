@@ -23,6 +23,8 @@ struct Window
 
 private:
 	ErrorOr<Success> Render(
+		int parentAbsoluteX,
+		int parentAbsoluteY,
 		const Tree<Dimensions>& dimensions,
 		const Node& node);
 

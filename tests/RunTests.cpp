@@ -6,7 +6,7 @@
 #include "./reflection/TestReflectContainers.hpp"
 #include "./reflection/TestReflectWrappers.hpp"
 #include "./serialization/TestDeserialize.hpp"
-#include "./interface/TestDeserializeUITree.hpp"
+#include "./interface/TestUITree.hpp"
 /*
 g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 */
@@ -36,7 +36,7 @@ int main(void)
 		TestReflectContainers,
 		TestReflectWrappers,
 		TestDeserialize,
-		TestDeserializeUITree>();
+		TestUITree>();
 	
 	std::cout << "All Tests Passed" << std::endl;
 	if (success) return 0;

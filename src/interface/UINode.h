@@ -9,7 +9,7 @@
 #include "../core/NamedType.hpp"
 #include "../core/ValueCheckedType.hpp"
 #include "../utils/StringExtensions.hpp"
-#include "TirgExtensions.h"
+#include "TigrExtensions.h"
 #include "Fonts.hpp"
 #include "InputHandler.hpp"
 
@@ -39,7 +39,7 @@ struct Image
 
 	Image(Tigr* bitmap)
 		: filePath()
-		, bitmap(bitmap, TigrDeleter)
+		, bitmap(bitmap, TigrDeleter())
 		, spriteLocation(0, 0, bitmap->w, bitmap->h)
 	{ }
 
@@ -139,7 +139,7 @@ struct Node
 
 	// these are not reflected and are runtime only
 	NodeSpec spec = NodeSpec::None;
-	DimensionAttribute[5] dependencyOrdering;
+	DimensionAttribute dependencyOrdering[5];
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 
