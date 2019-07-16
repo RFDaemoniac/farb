@@ -29,7 +29,10 @@ TypeInfo* UI::Image::GetStaticTypeInfo()
 				object.spriteLocation.width = object.bitmap->w;
 				object.spriteLocation.height = object.bitmap->h;
 			}
-			return object.bitmap != nullptr;
+			// height and width > 0 is to protect against dividing by 0
+			return object.bitmap != nullptr
+				&& object.spriteLocation.height > 0
+				&& object.spriteLocation.width > 0;
 		}
 	};
 
@@ -179,8 +182,17 @@ bool UI::Node::PostLoad(Node& node)
 	if (!node.image.filePath.empty()
 		&& !node.text.unparsedText.empty())
 	{
-		// rmf note: I think this is necessary because we only compute a single dimension
+		// rmf note: I think this is necessary because we only compute 
+		// a single dimension struct and use it to render contents
 		Error("UI::Node should specify at most one of image and text").Log();
+		return false;
+	}
+	if (node.image.filePath.empty()
+		&& node.text.unparsedText.empty()
+		&& (node.width.type == SizeType::FitContents
+			|| node.height.type == SizeType::FitContents))
+	{
+		Error("UI::Node with width or height fit contents must have an image or text contents").Log();
 		return false;
 	}
 
@@ -236,7 +248,7 @@ bool UI::Node::PostLoad(Node& node)
 	if (!usedAttributes.count(DimensionAttribute::Width)
 		&& !usedAttributes.count(DimensionAttribute::Height))
 	{
-		Error("Could not parse dependencies for Width and Height").Log();
+		Error("Could not parse dependencies for at least one of Width or Height").Log();
 		return false;
 	}
 
@@ -254,6 +266,9 @@ bool UI::Node::PostLoad(Node& node)
 
 	TryAdd(DimensionAttribute::Children);
 
+	bool childrenBeforeWidth = !usedAttributes.count(DimensionAttribute::Width);
+	bool childrenBeforeHeight = !usedAttributes.count(DimensionAttribute::Height);
+
 	if (usedAttributes.size() < 5)
 	{
 		TryAdd(DimensionAttribute::Width);
@@ -262,6 +277,37 @@ bool UI::Node::PostLoad(Node& node)
 		TryAdd(DimensionAttribute::Y);
 	}
 
+	if (!childrenBeforeWidth && !childrenBeforeHeight)
+	{
+		return true;
+	}
+	for (const auto & child : children)
+	{
+		if (childrenBeforeWidth)
+		{
+			Scalar[] widthScalars{child.left, child.right, child.width.scalar}
+			for (const auto & scalar : widthScalars)
+			{
+				if (scalar == Units::PercentOfParent)
+				{
+					Error("Scalar for child uses percent of parent width but parent width depends on children").Log();
+					return false;
+				}
+			}
+		}
+		if (childrenBeforeHeight)
+		{
+			Scalar[] heightScalars{child.top, child.bottom, child.height.scalar}
+			for (const auto & scalar : heightScalars)
+			{
+				if (scalar == Units::PercentOfParent)
+				{
+					Error("Scalar for child uses percent of parent height but parent height depends on children").Log();
+					return false;
+				}
+			}
+		}
+	}
 	return true;
 }
 

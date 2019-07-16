@@ -1,4 +1,5 @@
 #include <cmath>
+#include <limits>
 
 #include "Window.h"
 
@@ -43,11 +44,12 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 		return static_cast<int>(round(scalar.amount * parentSize));
 	case Units::PercentOfScreen:
 		return static_cast<int>(round(scalar.amount * windowSize));
-	default:
+	case Units::None:
 		return Error("UI::Node scalar unit is None");
 	}
 }
 
+// Dimensions x and y are relative to the parent x and y
 ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	const Dimensions& window,
 	const Dimensions& parent,
@@ -61,122 +63,256 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 	// as we are rendering
 	Tree<Dimensions> dimensionsTree;
 	Dimensions& dimensions = dimensionsTree.value;
+	auto& spec = node.spec;
 
 	std::set<DimensionAttributes> computedAttributes;
 
-	bool gotWidth = false;
-	bool gotHeight = false;
-
-	if (node.spec & NodeSpec::Left)
+	auto computeWidthFitContentsImage = [=]() -> ErrorOr<Success>
 	{
-		dimensions.x = CHECK_RETURN(ComputeScalar(
-			window.width, parent.width, node.left));
-
-		if (node.spec & NodeSpec::Right)
+		int maxWidth = std::numeric_limits<int>::max();
+		// rmf todo: could pass in explicitly whether parent width had been defined
+		// this implies FitContents also fits parent, which I think is correct
+		// since all (except mask, which is not yet implemented) children must fit their parents
+		if (parent.width > 0)
 		{
-			int x2 = parent.width - CHECK_RETURN(ComputeScalar(
-				window.width, parent.width, node.right));
-			dimensions.width = x2 - dimensions.x;
-			gotWidth = true;
+			int padding = dimensions.x;
+			if (spec & NodeSpec::Right)
+			{
+				padding += CHECK_RETURN(ComputeScalar(
+					window.width, parent.width, node.right));
+			}
+			maxWidth = min(maxWidth, parent.width - padding);
 		}
-	}
-	if (node.spec & NodeSpec::Top)
-	{
-		dimensions.y = ComputeScalar(window.height, parent.height, node.top);
-
-		if (node.spec & NodeSpec::Bottom)
+		if (computedAttributes.count(DimensionAttributes::Height))
 		{
-			int y2 = parent.height - CHECK_RETURN(ComputeScalar(
-				window.height, parent.height, node.bottom));
-			dimensions.height = y2 - dimensions.y;
-			gotHeight = true;
+			// rmf todo: 9sliced images (don't need to maintain ratio)
+			float imageRatio =
+				static_cast<float>(node.image.spriteLocation.width)
+				/ static_cast<float>(node.image.spriteLocation.height);
+			dimensions.width = static_cast<int>(round(dimensions.height * imageRatio));
+			if (dimensions.width > maxWidth)
+			{
+				dimensions.width = maxWidth;
+				// we should probably reduce height here, too?
+				// but what if Y has already been computed?
+				// figure it out later
+				return Error("Could not maintain aspect ratio of image " + node.image.filePath());
+			}
 		}
-	}
-
-	if (!gotWidth && node.width.type == SizeType::Scalar)
-	{
-		dimensions.width = CHECK_RETURN(ComputeScalar(
-			window.width, parent.width, node.width.scalar));
-		gotWidth = true;
-	}
-	if (!gotHeight && node.height.type == SizeType::Scalar)
-	{
-		dimensions.height = CHECK_RETURN(ComputeScalar(
-			window.height, parent.height, node.width.height));
-		gotHeight = true;
-	}
-	if ((!gotWidth && node.width.type == SizeType::FitContents
-			|| !gotHeight && node.height.type == SizeType::FitContents)
-		&& !node.image.filePath.empty())
-	{
-		if (!gotHeight
-			&& !gotWidth
-			&& node.width.type == SizeType::FitContents
-			&& node.height.type == SizeType::FitContents
-			&& !node.image.filePath.empty())
+		else
 		{
-			dimensions.width = node.image.spriteLocation.width;
-			gotWidth = true;
-			dimensions.height = node.image.spriteLocation.height;
-			gotHeight = true;
+			dimensions.width = min(maxWidth, node.image.spriteLocation.width);
 		}
+		return Success();
 	}
-	
 
+	auto computeWidthFitContentsText = [=]() -> ErrorOr<Success>
 	{
-		switch(node.width.type)
+		return Error("Text width FitContents not implemented");
+	}
+
+	auto computeHeightFitContentsImage = [=]() -> ErrorOr<Success>
+	{
+		int maxHeight = std::numeric_limits<int>::max();
+		// rmf todo: could pass in explicitly whether parent width had been defined
+		// this implies FitContents also fits parent, which I think is correct
+		// since all (except mask, which is not yet implemented) children must fit their parents
+		if (parent.height > 0)
 		{
-		case SizeType::Scalar:
+			int padding = dimensions.y;
+			if (spec & NodeSpec::Bottom)
+			{
+				padding += CHECK_RETURN(ComputeScalar(
+					window.height, parent.height, node.bottom));
+			}
+			maxHeight = min(maxHeight, parent.height - padding);
+		}
+		if (computedAttributes.count(DimensionAttributes::Width))
+		{
+			// rmf todo: 9sliced images (don't need to maintain ratio)
+			float imageRatio =
+				static_cast<float>(node.image.spriteLocation.height)
+				/ static_cast<float>(node.image.spriteLocation.width);
+			dimensions.height = static_cast<int>(round(dimensions.width * imageRatio));
+			if (dimensions.height > maxHeight)
+			{
+				dimensions.height = maxHeight;
+				// we should probably reduce width here, too?
+				// but what if X has already been computed?
+				// figure it out later
+				return Error("Could not maintain aspect ratio of image " + node.image.filePath());
+			}
+		}
+		else
+		{
+			dimensions.height = min(maxHeight, node.image.spriteLocation.height);
+		}
+		return Success();
+	}
+
+	auto computeHeightFitContentsText = [=]() -> ErrorOr<Success>
+	{
+		return Error("Text height FitContents not implemented");
+	}
+
+	// because the dependencyOrdering has already been computed
+	// we should be able to assume that the pre-requisites are available for use
+	for (auto attribute : node.dependencyOrdering)
+	{
+		switch(attribute)
+		{
+		case DimensionAttributes::X:
+		{
+			if (spec & NodeSpec::Left)
+			{
+				dimensions.x = CHECK_RETURN(ComputeScalar(
+					window.width, parent.width, node.left));
+			}
+			else if (spec & NodeSpec::Right)
+			{
+				// assume width is already computed if it's necessary
+				int xRight = parent.width - CHECK_RETURN(ComputeScalar(
+					window.width, parent.width, node.right));
+				dimensions.x = xRight - dimensions.width;
+			}
+			// default is 0;
 			break;
-		case SizeType::FitContents:
-			if (!gotHeight) { return Error("UI::Node width fit contents"); }
-		default:
-			return Error("UI::Node width sizetype other than scalar");
 		}
-	}
-
-	switch(node.width.type)
-	{
-	case SizeType::Scalar:
-		
-		break;
-	default:
-		return Error("UI::Node width sizetype other than scalar");
-	}
-
-	switch(node.height.type)
-	{
-	case SizeType::Scalar:
-		dimensions.height = CHECK_RETURN(ComputeScalar(window.height, parent.height, node.height.scalar));
-	default:
-		return Error("UI::Node height sizetype other than scalar");
-	}
-
-	// -1 is used as a sentinal value for parents dependent on child size
-	if (!gotWidth && node.width.type == SizeType::FitChildren)
-	{
-		dimensions.width = -1;
-	}
-	if (!gotHeight && node.height.type == SizeType::FitChildren)
-	{
-		dimensions.height = -1;
-	}
-
-	for (auto & child : node.children)
-	{
-		auto childTree = CHECK_RETURN(ComputeDimensions(
-			window, dimensions, child));
-		dimensionsTree.children.push_back(childTree);
-	}
-
-	if (!gotWidth && node.width.type == SizeType::FitChildren)
-	{
-		// get max width + x of all children
-	}
-	if (!gotHeight && node.height.type == SizeType::FitChildren)
-	{
-		// get max height + y of all children
-		// padding? could assume it's the same as the min y of all children
+		case DimensionAttributes::Y:
+		{
+			if (spec & NodeSpec::Top)
+			{
+				dimensions.x = CHECK_RETURN(ComputeScalar(
+					window.height, parent.height, node.top));
+			}
+			else if (spec & NodeSpec::Bottom)
+			{
+				// assume height is already computed if it's necessary
+				int yBottom = parent.height - CHECK_RETURN(ComputeScalar(
+					window.height, parent.height, node.bottom));
+				dimensions.y = yBottom - dimensions.height;
+			}
+			// default is 0;
+			break;
+		}
+		case DimensionAttributes::Width:
+		{
+			if (spec & NodeSpec::Width)
+			{
+				switch(node.width.type)
+				{
+				case SizeType::Scalar:
+					dimensions.width = CHECK_RETURN(ComputeScalar(
+						window.width, parent.width, node.width.scalar));
+					break;
+				case SizeType::FitContents:
+					if (!node.image.filePath.empty())
+					{
+						CHECK_RETURN(computeWidthFitContentsImage());
+					}
+					else if (!node.text.unparsedText.empty())
+					{
+						CHECK_RETURN(computeWidthFitContentsText());
+					}
+					break;
+				case SizeType::FitChildren:
+					int maxWidth = 0;
+					int rightPad = std::numeric_limits<int>::max();
+					for(const auto & childDim : dimensionsTree.children)
+					{
+						// rmf todo: bottom and right padding
+						// for now assume they are the same as top and left
+						rightPad = min(rightPad, childDim.x);
+						maxWidth = max(maxWidth, childDim.x + childDim.width);
+					}
+					if (maxWidth == 0 || rightPad == std::numeric_limits<int>::max())
+					{
+						dimensions.width = 0;
+					}
+					else
+					{
+						dimensions.width = maxWidth + rightPad;
+					}
+					break;
+				}
+			}
+			else if (spec & NodeSpec::Right)
+			{
+				int xRight = parent.width - CHECK_RETURN(ComputeScalar(
+					window.width, parent.width, node.right));
+				dimensions.width = xRight - dimensions.x;
+			}
+			else
+			{
+				// default is to fill parent
+				dimensions.width = parent.width - dimensions.x;
+			}
+			break;
+		}
+		case DimensionAttributes::Height:
+			if (spec & NodeSpec::Height)
+			{
+				switch(node.width.type)
+				{
+				case SizeType::Scalar:
+					dimensions.width = CHECK_RETURN(ComputeScalar(
+						window.width, parent.width, node.width.scalar));
+					break;
+				case SizeType::FitContents:
+					if (!node.image.filePath.empty())
+					{
+						CHECK_RETURN(computeHeightFitContentsImage());
+					}
+					else if (!node.text.unparsedText.empty())
+					{
+						CHECK_RETURN(computeHeightFitContentsText());
+					}
+					break;
+				case SizeType::FitChildren:
+					int maxHeight = 0;
+					int bottomPad = std::numeric_limits<int>::max();
+					for(const auto & childDim : dimensionsTree.children)
+					{
+						// rmf todo: bottom and right padding
+						// for now assume they are the same as top and left
+						bottomPad = min(bottomPad, childDim.y);
+						maxHeight = max(maxHeight, childDim.y + childDim.height);
+					}
+					if (maxHeight == 0 || bottomPad == std::numeric_limits<int>::max())
+					{
+						dimensions.height = 0;
+					}
+					else
+					{
+						dimensions.height = maxHeight + bottomPad;
+					}
+					break;
+				}
+			}
+			else if (spec & NodeSpec::Bottom)
+			{
+				int yBottom = parent.height - CHECK_RETURN(ComputeScalar(
+					window.height, parent.height, node.bottom));
+				dimensions.height = yBottom - dimensions.y;
+			}
+			else
+			{
+				// default is to fill parent
+				dimensions.height = parent.height - dimensions.y;
+			}
+			break;
+		case DimensionAttributes::Children:
+		{
+			for (auto & child : node.children)
+			{
+				auto childTree = CHECK_RETURN(ComputeDimensions(
+					window, dimensions, child));
+				dimensionsTree.children.push_back(childTree);
+			}
+			break;
+		}
+		} // end switch(attribute)
+		computedAttributes.insert(attribute);
 	}
 
 	if ((parent.height > 0 && dimensions.height + dimensions.y > parent.height)

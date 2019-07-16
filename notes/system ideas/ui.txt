@@ -6,3 +6,10 @@ as well as tweening functions
 
 html rendering engine as example
 https://limpet.net/mbrubeck/2014/09/17/toy-layout-engine-6-block.html
+
+
+scaled and/or 9 sliced images
+dependency graph that collapses to a list
+dependencies are the actual node attributes, top, left, right, bottom, width, height, children
+list is of dimensions to compute, x, y, width, height
+pass previous children dimensions in along with window and parent. unlike parent, you can expect all previous children to have been completed
