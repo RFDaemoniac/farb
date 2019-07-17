@@ -345,23 +345,12 @@ ErrorOr<Success> Window::Render(
 	int width = dimensions.value.width;
 	int height = dimensions.value.height;
 
+	Dimensions destination = {absoluteX, absoluteY, width, height};
+
 	if (!node.image.filePath.empty())
 	{
-		if (width != node.image.spriteLocation.width
-			|| height != node.image.spriteLocation.height)
-		{
-			return Error("Can't scale or 9-slice images yet");
-		}
-		// rmf todo: impelement 9 slicing, scaling, and sprite maps, (and rotation?)
-		tigrBlit(
-			window.get(),
-			node.image.bitmap.get(),
-			absoluteX,
-			absoluteY,
-			node.image.spriteLocation.x,
-			node.image.spriteLocation.y,
-			width,
-			height);
+		CHECK_RETURN(TigrDrawImage(
+			window.get(), destination, node.image));
 	}
 	if (!node.text.unparsedText.empty())
 	{
@@ -374,15 +363,11 @@ ErrorOr<Success> Window::Render(
 	}
 	for (int i = 0; i < dimensions.children.size(); ++i)
 	{
-		auto result = Render(
+		CHECK_RETURN(Render(
 			absoluteX,
 			absoluteY,
 			dimensions.children[i],
-			node.children[i]);
-		if (result.IsError())
-		{
-			return result.GetError();
-		}
+			node.children[i]));
 	}
 	tigrUpdate(window.get());
 	return Success();

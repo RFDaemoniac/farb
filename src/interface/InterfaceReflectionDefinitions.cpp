@@ -1,11 +1,10 @@
 #include <iostream>
 #include <set>
 
-#include "../../lib/tigr/tigr.h"
-
 #include "UINode.h"
 #include "Fonts.hpp"
 #include "InputHandler.hpp"
+#include "TigrExtensions.h"
 #include "../reflection/ReflectionDeclare.h"
 #include "../reflection/ReflectionDefine.hpp"
 #include "../reflection/ReflectionBasics.h"

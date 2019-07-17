@@ -19,33 +19,6 @@ namespace Farb
 namespace UI
 {
 
-struct Image
-{
-	std::string filePath;
-
-	// the same loaded file could be used by any number of Image objects
-	// rather than loading copies
-	// but needs to be deleted using tigrFree
-	// which we pass in to the costructor of std::shared_ptr
-	std::shared_ptr<Tigr> bitmap;
-
-	Dimensions spriteLocation;
-
-	Image()
-		: filePath()
-		, bitmap()
-		, spriteLocation()
-	{ }
-
-	Image(Tigr* bitmap)
-		: filePath()
-		, bitmap(bitmap, TigrDeleter())
-		, spriteLocation(0, 0, bitmap->w, bitmap->h)
-	{ }
-
-	static Reflection::TypeInfo* GetStaticTypeInfo();
-};
-
 enum class Units
 {
 	None,
