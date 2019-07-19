@@ -27,6 +27,22 @@ struct Dimensions
 	Dimensions(int x, int y, int width, int height)
 		: x(x), y(y), width(width), height(height)
 	{ }
+
+	Dimensions(const Dimensions& other)
+		: x(other.x), y(other.y), width(other.width), height(other.height)
+	{ }
+
+	void CopyPos(const Dimensions& other)
+	{
+		x = other.x;
+		y = other.y;
+	}
+
+	void CopySize(const Dimensions& other)
+	{
+		width = other.width;
+		height = other.height;
+	}
 };
 
 enum class DimensionAttribute
@@ -37,6 +53,24 @@ enum class DimensionAttribute
 	Height,
 	Children
 };
+
+namespace NineSliceLocations
+{
+	enum Enum
+	{
+		UL, UC, UR, // 0, 1, 2
+		ML, MC, MR, // 3, 4, 5
+		BL, BC, BR, // 6, 7, 8
+	}
+
+	bool IsUpper(Enum e) { return e <= UR; }
+
+	bool IsBottom(Enum e) { return e >= BL; }
+
+	bool IsLeft(Enum e) { return e == UL || e == ML || e == BL; }
+
+	bool IsRight(Enum e) { return e == UR || e == MR || e == BR; }
+}
 
 struct Image
 {
@@ -64,81 +98,23 @@ struct Image
 		, spriteLocation(0, 0, bitmap->w, bitmap->h)
 	{ }
 
+	Dimensions GetDestinationForSlice(
+		const Dimensions& destTotal,
+		NineSliceLocations::Enum location) const;
+
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
-namespace NineSliceLocations
-{
-	enum Enum
-	{
-		UL, UC, UR,
-		ML, MC, MR,
-		BL, BC, BR,
-	}
-}
+void TigrBlitWrapped(
+	Tigr* destImage,
+	const Dimensions& destTotal,
+	Tigr* sourceImage,
+	const Dimensions& sourceDim);
 
-inline ErrorOr<Success> TigrDrawImage(
+ErrorOr<Success> TigrDrawImage(
 	Tigr* destImage,
 	const Dimensions& destDim,
-	const Image& source)
-{
-	using NineSliceLocations;
-	if (destDim.width == source.spriteLocation.width
-		&& destDim.height == source.spriteLocation.height)
-	{
-		tigrBlit(destImage, source.bitmap.get(),
-			destDim.x, destDim.y,
-			source.spriteLocation.x, source.spriteLocation.y
-			source.spriteLocation.width, source.spriteLocation.height);
-		return Success();
-	}
-	else if (source.nineSlice.size() == 9)
-	{
-		int spriteX = source.spriteLocation.x;
-		int spriteY = source.spriteLocation.y;
-		auto sourceImage = source.bitmap.get();
-		auto& slices = source.nineSlice;
-		int middleWidth = destDim.width - slices[UL].width - slices[UR].width;
-		int middleHeight = destDim.height - slices[UL].height - slices[BL].height;
-		if (middleWidth < 0|| middleHeight < 0)
-		{
-			return Error("Truncated 9 sliced images are not implemented");
-		}
-		auto blitCorner = [&](NineSliceLocations::Enum corner)
-		{
-			auto& slice = source.nineSlice[corner];
-			tigrBlit(destImage, sourceImage
-				destDim.x + slice.x - spriteX,
-				destDim.y + slice.y - spriteY,
-				slice.x,
-				slice.y,
-				slice.width,
-				slice.height);
-		}
-		const NineSliceLocations::Enum corners[] {UL, UR, BL, BR};
-		for (auto corner : corners)
-		{
-			blitCorner(corner);
-		}
-		int remainingHeight = middleHeight;
-		while (remainingHeight > 0)
-		{
-			int remainingWidth = middleWidth;
-			while (remainingWidth > 0)
-			{
-				
-			}
-		}
-	}
-	else if (destDim.width <= source.spriteLocation.width
-		&& destDim.height <= source.spriteLocation.height)
-	{
-		return Error("Truncated images are not implemented");
-	}
-	// rmf note: probably won't do scaled images, we could just render the image here anyways
-	// at normal scale
-	return Error("Scaled images (without 9 slicing) not implemented");
-}
+	const Image& source);
 
 } // namespace UI
 

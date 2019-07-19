@@ -340,12 +340,9 @@ ErrorOr<Success> Window::Render(
 	const Node& node)
 {
 	tigrClear(window.get(), tigrRGB(0,0,0));
-	int absoluteX = parentAbsoluteX + dimensions.value.x;
-	int absoluteY = parentAbsoluteY + dimensions.value.y;
-	int width = dimensions.value.width;
-	int height = dimensions.value.height;
-
-	Dimensions destination = {absoluteX, absoluteY, width, height};
+	Dimensions destination = dimensions.value;
+	destination.x += parentAbsoluteX;
+	destination.y += parentAbsoluteY;
 
 	if (!node.image.filePath.empty())
 	{
@@ -364,8 +361,8 @@ ErrorOr<Success> Window::Render(
 	for (int i = 0; i < dimensions.children.size(); ++i)
 	{
 		CHECK_RETURN(Render(
-			absoluteX,
-			absoluteY,
+			destination.x,
+			destination.y,
 			dimensions.children[i],
 			node.children[i]));
 	}
