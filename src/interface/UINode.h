@@ -19,39 +19,6 @@ namespace Farb
 namespace UI
 {
 
-enum class Units
-{
-	None,
-	Pixels,
-	// could add width, height, min, max
-	// these work based on dimension being specified
-	PercentOfParent,
-	PercentOfScreen
-};
-
-struct Scalar
-{
-	float amount;
-	Units units;
-
-	Scalar()
-		: amount(0.0)
-		, units(Units::None)
-	{ }
-
-	static Reflection::TypeInfo* GetStaticTypeInfo();
-};
-
-struct Text
-{
-	std::string unparsedText;
-	std::string cachedParsedText;
-	Scalar size;
-	FontName fontName;
-
-	static Reflection::TypeInfo* GetStaticTypeInfo();
-};
-
 enum class SizeType
 {
 	Scalar,

@@ -4,6 +4,8 @@
 #include "../../lib/tigr/tigr.h"
 #include "../core/ErrorOr.hpp"
 
+#include "Fonts.hpp"
+
 namespace Farb
 {
 
@@ -31,18 +33,6 @@ struct Dimensions
 	Dimensions(const Dimensions& other)
 		: x(other.x), y(other.y), width(other.width), height(other.height)
 	{ }
-
-	void CopyPos(const Dimensions& other)
-	{
-		x = other.x;
-		y = other.y;
-	}
-
-	void CopySize(const Dimensions& other)
-	{
-		width = other.width;
-		height = other.height;
-	}
 };
 
 enum class DimensionAttribute
@@ -54,6 +44,39 @@ enum class DimensionAttribute
 	Children
 };
 
+enum class Units
+{
+	None,
+	Pixels,
+	// could add width, height, min, max
+	// these work based on dimension being specified
+	PercentOfParent,
+	PercentOfScreen
+};
+
+struct Scalar
+{
+	float amount;
+	Units units;
+
+	Scalar()
+		: amount(0.0)
+		, units(Units::None)
+	{ }
+
+	static Reflection::TypeInfo* GetStaticTypeInfo();
+};
+
+struct Text
+{
+	std::string unparsedText;
+	std::string cachedParsedText;
+	Scalar size;
+	FontName fontName;
+
+	static Reflection::TypeInfo* GetStaticTypeInfo();
+};
+
 namespace NineSliceLocations
 {
 	enum Enum
@@ -63,13 +86,13 @@ namespace NineSliceLocations
 		BL, BC, BR, // 6, 7, 8
 	}
 
-	bool IsUpper(Enum e) { return e <= UR; }
+	inline bool IsUpper(Enum e) { return e <= UR; }
 
-	bool IsBottom(Enum e) { return e >= BL; }
+	inline bool IsBottom(Enum e) { return e >= BL; }
 
-	bool IsLeft(Enum e) { return e == UL || e == ML || e == BL; }
+	inline bool IsLeft(Enum e) { return e == UL || e == ML || e == BL; }
 
-	bool IsRight(Enum e) { return e == UR || e == MR || e == BR; }
+	inline bool IsRight(Enum e) { return e == UR || e == MR || e == BR; }
 }
 
 struct Image
@@ -86,35 +109,35 @@ struct Image
 
 	std::vector<Dimensions> nineSlice;
 
+	bool enableTiling;
+
 	Image()
 		: filePath()
 		, bitmap()
 		, spriteLocation()
+		, enableTiling(false)
 	{ }
 
 	Image(Tigr* bitmap)
 		: filePath()
 		, bitmap(bitmap, TigrDeleter())
 		, spriteLocation(0, 0, bitmap->w, bitmap->h)
+		, enableTiling(false)
 	{ }
+
+	inline bool Defined() { return !filePath.empty(); }
 
 	Dimensions GetDestinationForSlice(
 		const Dimensions& destTotal,
 		NineSliceLocations::Enum location) const;
 
+	ErrorOr<Success> Draw(
+		Tigr* destImage,
+		const Dimensions& destDim) const;
+
+
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
-
-void TigrBlitWrapped(
-	Tigr* destImage,
-	const Dimensions& destTotal,
-	Tigr* sourceImage,
-	const Dimensions& sourceDim);
-
-ErrorOr<Success> TigrDrawImage(
-	Tigr* destImage,
-	const Dimensions& destDim,
-	const Image& source);
 
 } // namespace UI
 

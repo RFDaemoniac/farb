@@ -50,12 +50,18 @@ Dimensions Image::GetDestinationForSlice(
 }
 
 
-void TigrBlitWrapped(
+ErrorOr<Success> TigrBlitWrapped(
 	Tigr* destImage,
 	const Dimensions& destTotal,
 	Tigr* sourceImage,
 	const Dimensions& sourceDim)
 {
+	if ((sourceDim.width == 0 || sourceDim.height == 0)
+		&& destTotal.width != 0
+		&& destTotal.height != 0)
+	{
+		return Error("Trying to BlitWrapped a section with no size to a destination with size");
+	}
 	int destX = destTotal.x;
 	int destY = destTotal.y;
 	int xRepeat = destDim.width / sourceDim.width;
@@ -118,9 +124,10 @@ void TigrBlitWrapped(
 			xRemainder,
 			yRemainder);
 	}
+	return Success();
 }
 
-ErrorOr<Success> TigrDrawImage(
+ErrorOr<Success> Image::Draw(
 	Tigr* destImage,
 	const Dimensions& destDim,
 	const Image& source)
@@ -129,6 +136,7 @@ ErrorOr<Success> TigrDrawImage(
 	if (destDim.width == source.spriteLocation.width
 		&& destDim.height == source.spriteLocation.height)
 	{
+		// simplest case is shortcuted, this might not be worth it if it's not common
 		tigrBlit(destImage, source.bitmap.get(),
 			destDim.x, destDim.y,
 			source.spriteLocation.x, source.spriteLocation.y
@@ -154,19 +162,28 @@ ErrorOr<Success> TigrDrawImage(
 		for (auto location : cross)
 		{
 			Dimensions destSlicedDim = source.GetDestinationForSlice(destDim, location);
-			TigrBlitWrapped(destImage, destSlicedDim,
-				sourceImage, source.nineSlice[location]);
+			CHECK_RETURN(TigrBlitWrapped(destImage, destSlicedDim,
+				sourceImage, source.nineSlice[location]));
 		}
+		return Success();
+	}
+	else if (source.enableTiling)
+	{
+		// wrapped will handle repeated images
+		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, sourceImage, source.spriteLocation));
+		return Success();
 	}
 	else if (destDim.width <= source.spriteLocation.width
 		&& destDim.height <= source.spriteLocation.height)
 	{
-		return Error("Truncated images are not implemented");
+		// wrapped will handle truncated images as well as repeated images
+		TigrBlitWrapped(destImage, destDim, sourceImage, source.spriteLocation);
+		return Success();
 	}
 	
 	// rmf note: probably won't do scaled images,
-	// we could just render the image here at normal scale
-	return Error("Scaled images (without 9 slicing) not implemented");
+	// we could just render the image here at normal scale?
+	return Error("Scaled images (without 9 slicing, or tiling) not implemented");
 }
 
 } // namespace UI

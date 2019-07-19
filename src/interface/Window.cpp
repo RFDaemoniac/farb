@@ -344,10 +344,9 @@ ErrorOr<Success> Window::Render(
 	destination.x += parentAbsoluteX;
 	destination.y += parentAbsoluteY;
 
-	if (!node.image.filePath.empty())
+	if (node.image.Defined())
 	{
-		CHECK_RETURN(TigrDrawImage(
-			window.get(), destination, node.image));
+		CHECK_RETURN(node.image.Draw(window.get(), destination));
 	}
 	if (!node.text.unparsedText.empty())
 	{
