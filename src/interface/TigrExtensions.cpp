@@ -186,6 +186,114 @@ ErrorOr<Success> Image::Draw(
 	return Error("Scaled images (without 9 slicing, or tiling) not implemented");
 }
 
+ErrorOr<Success> Text::UpdateParsedText()
+{
+	// rmf todo actual replacement and localization
+	cachedParsedText = unparsedText;
+}
+
+void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const char *text, ...)
+{
+	char tmp[1024];
+	TigrGlyph *g;
+	va_list args;
+	const char *p;
+	int start = x, c;
+
+	tigrSetupFont(font);
+
+	// Expand the formatting string.
+	va_start(args, text);
+	vsnprintf(tmp, sizeof(tmp), text, args);
+	tmp[sizeof(tmp)-1] = 0;
+	va_end(args);
+
+	// Print each glyph.
+	p = tmp;
+	while (*p)
+	{
+		p = tigrDecodeUTF8(p, &c);
+		if (c == '\r')
+			continue;
+		if (c == '\n') {
+			x = start;
+			y += tigrTextHeight(font, "");
+			continue;
+		}
+		g = get(font, c);
+		tigrBlitTint(dest, font->bitmap, x, y, g->x, g->y, g->w, g->h, color);
+		x += g->w;
+	}
+}
+
+std::pair<int, int> Text::GetBoundsRequired(int maxWidth) const
+{
+	const char *p = cachedParsedText.c_str();
+	int line = 0;
+	int lineWidth = 0;
+	int maxLineWidth = 0;
+	TigrFont* font = GetFont(fontName);
+	TigrGlyph *g;
+	int c;
+
+	while (*p)
+	{
+		p = tigrDecodeUTF8(p, &c);
+		if (c == '\r') continue;
+		if (c == '\n')
+		{
+			if (lineWidth > maxLineWidth)
+			{
+				maxLineWidth = lineWidth;
+			}
+			line++;
+			lineWidth = 0;
+			continue;
+		}
+		g = get(font, c);
+		lineWidth += g->w;
+		if (widthBound >= 0 && lineWidth > widthBound)
+		{
+			if (lineWidth > maxLineWidth)
+			{
+				maxLineWidth = widthBound;
+			}
+			line++;
+			lineWidth = g->w;
+		}
+	}
+	return { maxLineWidth, (line + 1) * tigrTextHeight(font, "") };
+}
+
+ErrorOr<Success> Text::Draw(
+	Tigr* destImage,
+	const Dimensions& destDim) const
+{
+	struct DrawFunctor
+	{
+		const Dimensions& destDim;
+		TigrFont* font;
+
+		DrawFunctor(destDim, font)
+			: destDim(destDim)
+			, font(font)
+		{ }
+
+		void operator()(TigrGlyph* g, int x, int y)
+		{
+			x = x + destDim.x;
+			y = y + destDim.y;
+			if (x + g->w > destDim.width) return;
+			if (y + g->h > destDim.height) return;
+			tigrBlitTint(destImage, font->bitmap, x, y, g->x, g->y, g->w, g->h, color);
+		}
+	}
+
+
+}
+
+
+
 } // namespace UI
 
 } // namespace Farb

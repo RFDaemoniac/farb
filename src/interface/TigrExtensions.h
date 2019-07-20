@@ -2,8 +2,8 @@
 #define FARB_TIGR_EXTENSIONS_H
 
 #include "../../lib/tigr/tigr.h"
-#include "../core/ErrorOr.hpp"
 
+#include "../core/ErrorOr.hpp"
 #include "Fonts.hpp"
 
 namespace Farb
@@ -67,16 +67,6 @@ struct Scalar
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
-struct Text
-{
-	std::string unparsedText;
-	std::string cachedParsedText;
-	Scalar size;
-	FontName fontName;
-
-	static Reflection::TypeInfo* GetStaticTypeInfo();
-};
-
 namespace NineSliceLocations
 {
 	enum Enum
@@ -135,6 +125,28 @@ struct Image
 		Tigr* destImage,
 		const Dimensions& destDim) const;
 
+
+	static Reflection::TypeInfo* GetStaticTypeInfo();
+};
+
+struct Text
+{
+	std::string unparsedText;
+	std::string cachedParsedText;
+	Scalar size;
+	FontName fontName;
+	TPixel color;
+
+	inline bool Defined() { return !unparsedText.empty(); }
+
+	// rmf todo get context to pass in and use for replacements
+	ErrorOr<Success> UpdateParsedText();
+
+	std::pair<int, int> GetBoundsRequired(int maxWidth) const;
+
+	ErrorOr<Success> Draw(
+		Tigr* destImage,
+		const Dimensions& destDim) const;
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
