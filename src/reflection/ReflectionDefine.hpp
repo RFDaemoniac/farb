@@ -484,21 +484,23 @@ protected:
 	TMem T::* location;
 
 public:
-	MemberInfoTyped(HString name, TMem T::* location)
-		: MemberInfo<T>(name, GetTypeInfo<TMem>())
+	MemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfo)
+		: MemberInfo<T>(name, typeInfo)
 		, location(location)
 	{ }
 
 	virtual ReflectionObject Get(T* t) const override
 	{
-		return Reflect(t->*location);
+		return ReflectionObject(
+			reinterpret_cast<byte*>(&(t->*location)),
+			typeInfo);
 	}
 };
 
 template<typename T, typename TMem>
-MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location)
+MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location, TypeInfo* tyopeInfo = GetTypeInfo<TMem>())
 {
-	return new MemberInfoTyped<T, TMem>(name, location);
+	return new MemberInfoTyped<T, TMem>(name, location, typeInfo);
 }
 
 template<typename T>
@@ -527,6 +529,30 @@ struct TypeInfoStruct : public TypeInfo
 		{
 			delete pMember;
 		}
+	}
+
+	virtual ErrorOr<ReflectionObject> GetAtIndex(
+		byte* obj,
+		int index) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		if (vMembers.size() <= index)
+		{
+			return Error(
+				name
+				+ " struct GetAtIndex "
+				+ std::to_string(index)
+				+ " is out of bounds, "
+				+ std::to_string(vMembers.size())
+				+ ".");
+		}
+		return vMembers[index]->Get(t);
+	}
+
+	virtual bool PushBackDefault(byte* obj) const override
+	{
+		// has no meaning, failure would occur in GetAtIndex if array is too long
+		return true;
 	}
 
 	virtual ErrorOr<ReflectionObject> GetAtKey(

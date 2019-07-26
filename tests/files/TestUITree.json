@@ -1,5 +1,5 @@
 {
-	"image": "./tests/files/button.png",
+	"image": {"source": "./tests/files/button.png"},
 	"input":
 	{
 		"type": "MouseClick",

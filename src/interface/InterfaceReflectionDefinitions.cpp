@@ -1,5 +1,6 @@
 #include <iostream>
 #include <set>
+#include <unordered_map>
 
 #include "UINode.h"
 #include "Fonts.hpp"
@@ -16,65 +17,106 @@ namespace Farb
 {
 using namespace Reflection;
 
-TypeInfo* UI::Image::GetStaticTypeInfo()
+
+TypeInfo* UI::Dimensions::GetStaticTypeInfo()
 {
-	struct Assign
-	{
-		static bool String(UI::Image& object, std::string value)
-		{
-			object.filePath = value;
-			object.bitmap.reset(tigrLoadImage(object.filePath.c_str()), TigrDeleter());
-			if (object.bitmap != nullptr)
-			{
-				object.spriteLocation.width = object.bitmap->w;
-				object.spriteLocation.height = object.bitmap->h;
-			}
-			// height and width > 0 is to protect against dividing by 0
-			return object.bitmap != nullptr
-				&& object.spriteLocation.height > 0
-				&& object.spriteLocation.width > 0;
+	static TypeInfoStruct<UI::Dimensions> typeInfo {
+		"UI::Dimensions",
+		nullptr,
+		std::vector<MemberInfo<UI::Dimensions>*> {
+			MakeMemberInfoTyped("x", &UI::Dimensions::x),
+			MakeMemberInfoTyped("y", &UI::Dimensions::y),
+			MakeMemberInfoTyped("width", &UI::Dimensions::width),
+			MakeMemberInfoTyped("height", &UI::Dimensions::height),
 		}
 	};
 
-	static auto typeInfo = TypeInfoCustomLeaf<UI::Image>::Construct(
-		"UI::Image",
-		Assign::String
-	);
 	return &typeInfo;
 }
 
-struct UIScalarAssign
+bool UI::Image::PostLoad(Image& image)
 {
-	static bool Parse(UI::Scalar& object, std::string value)
-	{
-		auto parts = Split(value, ' ');
-		if (parts.size() != 2)
-		{
-			Error("Scalar::ParseAssign requires a single space between amount and units").Log();
-			return false;
-		}
-		bool success = DeserializeString(parts[0], Reflect(object.amount));
-		success = success && Reflect(object.units).AssignString(parts[1]);
-		return success;
-	}
+	static std::unordered_map<std::string, std::weak_ptr<Tigr> > sharedImages;
+	if (!image.source) return false;
 
-	template<typename T>
-	static bool Numeric(UI::Scalar& object, T value)
+	if (sharedImages.count(image.source))
 	{
-		object.amount = static_cast<float>(value);
-		object.units = UI::Units::Pixels;
-		return true;
+		// rmf todo: what is the weak_ptr interface?
+		// I should probably consider downloading the docs...
+		auto weak = sharedImages[image.source];
+		if (weak.get())
+		{
+			image.bitmap.reset(weak.get(), TigrDeleter());
+		}
 	}
-};
+	if (image.bitmap == nullptr)
+	{
+		image.bitmap.reset(tigrLoadImage(image.filePath.c_str()), TigrDeleter());
+		sharedImages[image.source].reset(image.bitmap);
+	}
+	if (image.bitmap == nullptr) return false;
+
+	if (image.spriteLocation.width == 0
+		&& image.spriteLocation.height == 0)
+	{
+		image.spriteLocation.width = image.bitmap->w;
+		image.spriteLocation.height = image.bitmap->h;
+	}
+	// height and width > 0 is to protect against dividing by 0
+	return image.bitmap != nullptr
+		&& image.spriteLocation.height > 0
+		&& image.spriteLocation.width > 0;
+}
+
+TypeInfo* UI::Image::GetStaticTypeInfo()
+{
+	static TypeInfoStruct<UI::Image> typeInfo {
+		"UI::Image(Table)",
+		nullptr,
+		std::vector<MemberInfo<UI::Image>*> {
+			MakeMemberInfoTyped("source", &UI::Image::filePath)
+			MakeMemberInfoTyped("tiled", &UI::Image::enableTiling),
+			MakeMemberInfoTyped("dimensions", &UI::Image::spriteLocation),
+			// would like to specify this as a vector of 4 ints [x1, x2, y1, y2]
+			MakeMemberInfoTyped("slices", &UI::Image::nineSlice)
+		},
+		&UI::Image::PostLoad
+	};
+	return &typeInfo;
+}
 
 TypeInfo* UI::Scalar::GetStaticTypeInfo()
 {
+	struct Assign
+	{
+		static bool Parse(UI::Scalar& object, std::string value)
+		{
+			auto parts = Split(value, ' ');
+			if (parts.size() != 2)
+			{
+				Error("Scalar::ParseAssign requires a single space between amount and units").Log();
+				return false;
+			}
+			bool success = DeserializeString(parts[0], Reflect(object.amount));
+			success = success && Reflect(object.units).AssignString(parts[1]);
+			return success;
+		}
+
+		template<typename T>
+		static bool Numeric(UI::Scalar& object, T value)
+		{
+			object.amount = static_cast<float>(value);
+			object.units = UI::Units::Pixels;
+			return true;
+		}
+	};
+
 	static auto typeInfo = TypeInfoCustomLeaf<UI::Scalar>::Construct(
 		"UI::Scalar",
-		UIScalarAssign::Parse,
-		UIScalarAssign::Numeric<uint>,
-		UIScalarAssign::Numeric<int>,
-		UIScalarAssign::Numeric<float>
+		Assign::Parse,
+		Assign::Numeric<uint>,
+		Assign::Numeric<int>,
+		Assign::Numeric<float>
 	);
 	return &typeInfo;
 }
@@ -392,7 +434,7 @@ TypeInfo* Reflection::GetTypeInfo<UI::SizeType>()
 {
 	static TypeInfoEnum<UI::SizeType> typeInfo {
 		"UI::SizeType",
-		std::vector<std::pair <std::string, int> >{
+		std::vector<std::pair <std::string, int> > {
 			// Scalar is not reflected intentionally because UI::Size doesn't need it
 			// could add later
 			{"FitContents", static_cast<int>(UI::SizeType::FitContents)},
@@ -407,7 +449,7 @@ TypeInfo* Reflection::GetTypeInfo<Input::Type>()
 {
 	static TypeInfoEnum<Input::Type> typeInfo {
 		"Input::Type",
-		std::vector<std::pair <std::string, int> >{
+		std::vector<std::pair <std::string, int> > {
 			{"MouseDown", static_cast<int>(Input::Type::MouseDown)},
 			{"MouseUp", static_cast<int>(Input::Type::MouseUp)},
 			{"MouseClick", static_cast<int>(Input::Type::MouseClick)},

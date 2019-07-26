@@ -33,6 +33,8 @@ struct Dimensions
 	Dimensions(const Dimensions& other)
 		: x(other.x), y(other.y), width(other.width), height(other.height)
 	{ }
+
+	static Reflection::TypeInfo* GetStaticTypeInfo();
 };
 
 enum class DimensionAttribute
@@ -105,6 +107,7 @@ struct Image
 		: filePath()
 		, bitmap()
 		, spriteLocation()
+		, nineSlice()
 		, enableTiling(false)
 	{ }
 
@@ -112,6 +115,7 @@ struct Image
 		: filePath()
 		, bitmap(bitmap, TigrDeleter())
 		, spriteLocation(0, 0, bitmap->w, bitmap->h)
+		, nineSlice()
 		, enableTiling(false)
 	{ }
 
@@ -125,9 +129,48 @@ struct Image
 		Tigr* destImage,
 		const Dimensions& destDim) const;
 
-
 	static Reflection::TypeInfo* GetStaticTypeInfo();
+
+	static bool PostLoad(Image& image);
 };
+
+/*
+// rmf note: to be used if we're trying to minimize the width
+// while expanding within a height requirement
+// this is probably not necessary for a long time, if ever
+
+struct Word
+{
+	bool punctuation;
+	bool space;
+	int index;
+	int length;
+}
+
+struct Line
+{
+	// if the first word is a space, it should not contribute to width
+	// this means width needs some upkeep, which is what the functions are for
+	std::vector<Word> words;
+	int width;
+
+	// returns new width
+	int RemoveLastWord();
+	
+	// returns new width
+	int AddWordToFront(Word&& w);
+
+	int AddWordToBack(Word&& w);
+}
+
+struct Paragraph
+{
+	std::vector<Line> lines;
+	int widthMax;
+	int widthCurrent;
+	int lineHeight;
+}
+*/
 
 struct Text
 {
@@ -149,6 +192,12 @@ struct Text
 		const Dimensions& destDim) const;
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
+
+private:
+	// shared behavior between GetBoundsRequired and Draw
+	std::pair<int, int> WalkthroughBounds(
+		int maxWidth,
+		void (*drawFunctor)(TigrGlyph*, int, int)) const;
 };
 
 } // namespace UI

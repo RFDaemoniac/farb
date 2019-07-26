@@ -192,49 +192,22 @@ ErrorOr<Success> Text::UpdateParsedText()
 	cachedParsedText = unparsedText;
 }
 
-void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const char *text, ...)
+// rmf todo: wrap by word, not character
+// including skipping spaces at the start of a line
+std::pair<int, int> Text::WalkthroughBounds(
+	int maxWidth,
+	void (*drawFunctor)(TigrGlyph*, int, int)) const
 {
-	char tmp[1024];
-	TigrGlyph *g;
-	va_list args;
-	const char *p;
-	int start = x, c;
-
-	tigrSetupFont(font);
-
-	// Expand the formatting string.
-	va_start(args, text);
-	vsnprintf(tmp, sizeof(tmp), text, args);
-	tmp[sizeof(tmp)-1] = 0;
-	va_end(args);
-
-	// Print each glyph.
-	p = tmp;
-	while (*p)
-	{
-		p = tigrDecodeUTF8(p, &c);
-		if (c == '\r')
-			continue;
-		if (c == '\n') {
-			x = start;
-			y += tigrTextHeight(font, "");
-			continue;
-		}
-		g = get(font, c);
-		tigrBlitTint(dest, font->bitmap, x, y, g->x, g->y, g->w, g->h, color);
-		x += g->w;
-	}
-}
-
-std::pair<int, int> Text::GetBoundsRequired(int maxWidth) const
-{
-	const char *p = cachedParsedText.c_str();
+	const char * p = cachedParsedText.c_str();
 	int line = 0;
 	int lineWidth = 0;
 	int maxLineWidth = 0;
-	TigrFont* font = GetFont(fontName);
-	TigrGlyph *g;
+	TigrFont * font = GetFont(fontName);
+	TigrGlyph * g;
 	int c;
+	int lineHeight = tigrTextHeight(font, "");
+
+	bool skipNextSpaceAtStartOfLine = false;
 
 	while (*p)
 	{
@@ -246,50 +219,82 @@ std::pair<int, int> Text::GetBoundsRequired(int maxWidth) const
 			{
 				maxLineWidth = lineWidth;
 			}
+			// this is not wraparound, spaces at the start of the line
+			// are considered indentation
+			skipNextSpaceAtStartOfLine = false;
 			line++;
 			lineWidth = 0;
 			continue;
 		}
 		g = get(font, c);
-		lineWidth += g->w;
-		if (widthBound >= 0 && lineWidth > widthBound)
+		int potentialLineWidth = lineWidth + g->w;
+		if (widthBound >= 0 && potentialLineWidth > widthBound)
 		{
-			if (lineWidth > maxLineWidth)
+			if (potentialLineWidth > maxLineWidth)
 			{
 				maxLineWidth = widthBound;
 			}
+			// this is wraparound, don't need to include spaces
+			skipNextSpaceAtStartOfLine = true;
 			line++;
-			lineWidth = g->w;
+			lineWidth = 0;
 		}
+		if (skipNextSpaceAtStartOfLine
+			&& lineWidth == 0
+			&& c == ' ')
+		{
+			// should we skip multiple spaces in a row?
+			skipNextSpaceAtStartOfLine = false;
+			continue;
+		}
+		if (drawFunctor != nullptr)
+		{
+			drawFunctor(g, lineWidth, line * lineHeight);
+		}
+		lineWidth += g->w;
 	}
-	return { maxLineWidth, (line + 1) * tigrTextHeight(font, "") };
+	return { maxLineWidth, (line + 1) * lineHeight };
+}
+
+std::pair<int, int> Text::GetBoundsRequired(int maxWidth) const
+{
+	return WalkthroughBounds(maxWidth, nullptr);
+}
+
+struct DrawGlyphFunctor
+{
+	const Dimensions& destDim;
+	TigrFont* font;
+
+	DrawFunctor(destDim, font)
+		: destDim(destDim)
+		, font(font)
+	{ }
+
+	void operator()(TigrGlyph* g, int x, int y)
+	{
+		x = x + destDim.x;
+		y = y + destDim.y;
+		// glyph can be partially clipped if we're over the destDim height
+		// (or width, less likely due to wrapping)
+		w = min(g->w, destDim.width - x);
+		h = min(g->h, destDim.height - y);
+		if (w < 0 || h < 0) return;
+		tigrBlitTint(destImage, font->bitmap, x, y, g->x, g->y, w, h, color);
+	}
 }
 
 ErrorOr<Success> Text::Draw(
 	Tigr* destImage,
 	const Dimensions& destDim) const
 {
-	struct DrawFunctor
-	{
-		const Dimensions& destDim;
-		TigrFont* font;
+	// when would we return error?
+	// if text is clipped?
 
-		DrawFunctor(destDim, font)
-			: destDim(destDim)
-			, font(font)
-		{ }
+	DrawGlyphFunctor draw { destDim, GetFont(fontName) };
+	WalkthroughBounds(destDim.width, draw);
 
-		void operator()(TigrGlyph* g, int x, int y)
-		{
-			x = x + destDim.x;
-			y = y + destDim.y;
-			if (x + g->w > destDim.width) return;
-			if (y + g->h > destDim.height) return;
-			tigrBlitTint(destImage, font->bitmap, x, y, g->x, g->y, g->w, g->h, color);
-		}
-	}
-
-
+	return Success();
 }
 
 
