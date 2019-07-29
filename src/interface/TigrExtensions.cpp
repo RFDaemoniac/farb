@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "TigrExtensions.h"
 
 
@@ -12,9 +14,8 @@ Dimensions Image::GetDestinationForSlice(
 	NineSliceLocations::Enum location) const
 {
 	Dimensions dest = destTotal;
-	using NineSliceLocations;
-	const NineSliceLocations::Enum corners[] {UL, UR, BL, BR};
-	const auto& slice = nineSlice[location];
+	const Dimensions & slice = nineSlice[location];
+	using namespace NineSliceLocations;
 
 	if (IsLeft(location))
 	{
@@ -27,11 +28,11 @@ Dimensions Image::GetDestinationForSlice(
 	}
 	else
 	{
-		dest.x += nineSlice[UL].width;
-		dest.width -= (nineSlice[UL].width + nineSlice[UR].width);
+		dest.x += nineSlice[TL].width;
+		dest.width -= (nineSlice[TL].width + nineSlice[TR].width);
 	}
 
-	if (IsUpper(location))
+	if (IsTop(location))
 	{
 		dest.height = slice.height;
 	}
@@ -42,9 +43,13 @@ Dimensions Image::GetDestinationForSlice(
 	}
 	else
 	{
-		dest.y += nineSlice[UL].height;
-		dest.height -= (nineSlice[UL].height + nineSlice[BL].height);
+		dest.y += nineSlice[TL].height;
+		dest.height -= (nineSlice[TL].height + nineSlice[BL].height);
 	}
+
+	// apply cropping
+	dest.width = std::max(0, std::min(dest.width, destTotal.x - dest.x + destTotal.width));
+	dest.height = std::max(0, std::min(dest.height, destTotal.y - dest.y + destTotal.height));
 
 	return dest;
 }
@@ -64,10 +69,10 @@ ErrorOr<Success> TigrBlitWrapped(
 	}
 	int destX = destTotal.x;
 	int destY = destTotal.y;
-	int xRepeat = destDim.width / sourceDim.width;
-	int xRemainder = destDim.width % sourceDim.width;
-	int yRepeat = destDim.height / sourceDim.height;
-	int yRemainder = destDim.height % sourceDim.height;
+	int xRepeat = destTotal.width / sourceDim.width;
+	int xRemainder = destTotal.width % sourceDim.width;
+	int yRepeat = destTotal.height / sourceDim.height;
+	int yRemainder = destTotal.height % sourceDim.height;
 	auto blit = [&](int destX, int destY, int width, int height)
 	{
 		tigrBlit(
@@ -75,7 +80,7 @@ ErrorOr<Success> TigrBlitWrapped(
 			destX, destY,
 			sourceDim.x, sourceDim.y,
 			width, height);
-	}
+	};
 
 	for (int row = 0; row < yRepeat; ++row)
 	{
@@ -84,7 +89,7 @@ ErrorOr<Success> TigrBlitWrapped(
 		{
 			blit(
 				destTotal.x + (col * sourceDim.width),
-				destY
+				destY,
 				sourceDim.width,
 				sourceDim.height);
 		}
@@ -129,55 +134,64 @@ ErrorOr<Success> TigrBlitWrapped(
 
 ErrorOr<Success> Image::Draw(
 	Tigr* destImage,
-	const Dimensions& destDim,
-	const Image& source)
+	const Dimensions& destDim) const
 {
-	using NineSliceLocations;
+	auto & source = (*this);
+	using namespace NineSliceLocations;
 	if (destDim.width == source.spriteLocation.width
 		&& destDim.height == source.spriteLocation.height)
 	{
 		// simplest case is shortcuted, this might not be worth it if it's not common
 		tigrBlit(destImage, source.bitmap.get(),
 			destDim.x, destDim.y,
-			source.spriteLocation.x, source.spriteLocation.y
+			source.spriteLocation.x, source.spriteLocation.y,
 			source.spriteLocation.width, source.spriteLocation.height);
 		return Success();
 	}
 	else if (source.nineSlice.size() == 9)
 	{
-		if (destDim.width <= source.nineSlice[UL].width + source.nineSlice[UR].width
-			&& destDim.height <= source.nineSlice[UL].height + source.nineSlice[BL].height)
+		if (destDim.width <= source.nineSlice[TL].width + source.nineSlice[TR].width
+			&& destDim.height <= source.nineSlice[TL].height + source.nineSlice[BL].height)
 		{
 			return Error("9 sliced images with truncated corners are not implemented");
 		}
-		const NineSliceLocations::Enum corners[] {UL, UR, BL, BR};
+		const NineSliceLocations::Enum corners[] {TL, TR, BL, BR};
 		for (auto location : corners)
 		{
 			Dimensions destSlicedDim = source.GetDestinationForSlice(destDim, location);
-			tigrBlit(destImage, sourceImage,
+			if (destSlicedDim.width == 0 || destSlicedDim.height == 0)
+			{
+				continue;
+			}
+			tigrBlit(destImage, source.bitmap.get(),
 				destSlicedDim.x, destSlicedDim.y,
-				source.nineSlice[location].width, source.nineSlice[location].height);
+				source.nineSlice[location].x, source.nineSlice[location].y,
+				destSlicedDim.width, destSlicedDim.height);
 		}
-		const NineSliceLocations::Enum cross[] {UC, ML, MC, MR, BC};
+		const NineSliceLocations::Enum cross[] {TC, ML, MC, MR, BC};
 		for (auto location : cross)
 		{
 			Dimensions destSlicedDim = source.GetDestinationForSlice(destDim, location);
+			if (destSlicedDim.width == 0 || destSlicedDim.height == 0)
+			{
+				continue;
+			}
 			CHECK_RETURN(TigrBlitWrapped(destImage, destSlicedDim,
-				sourceImage, source.nineSlice[location]));
+				source.bitmap.get(), source.nineSlice[location]));
 		}
 		return Success();
 	}
 	else if (source.enableTiling)
 	{
 		// wrapped will handle repeated images
-		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, sourceImage, source.spriteLocation));
+		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, source.bitmap.get(), source.spriteLocation));
 		return Success();
 	}
 	else if (destDim.width <= source.spriteLocation.width
 		&& destDim.height <= source.spriteLocation.height)
 	{
-		// wrapped will handle truncated images as well as repeated images
-		TigrBlitWrapped(destImage, destDim, sourceImage, source.spriteLocation);
+		// wrapped will handle truncated images
+		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, source.bitmap.get(), source.spriteLocation));
 		return Success();
 	}
 	
@@ -190,13 +204,37 @@ ErrorOr<Success> Text::UpdateParsedText()
 {
 	// rmf todo actual replacement and localization
 	cachedParsedText = unparsedText;
+	return Success();
+}
+
+struct DrawGlyphFunctor
+{
+	const Dimensions& destDim;
+	TigrFont* font;
+
+	DrawGlyphFunctor(const Dimensions& destDim, TigrFont* font)
+		: destDim(destDim)
+		, font(font)
+	{ }
+
+	void operator()(TigrGlyph* g, int x, int y)
+	{
+		x = x + destDim.x;
+		y = y + destDim.y;
+		// glyph can be partially clipped if we're over the destDim height
+		// (or width, less likely due to wrapping)
+		w = std::min(g->w, destDim.width - x);
+		h = std::min(g->h, destDim.height - y);
+		if (w < 0 || h < 0) return;
+		tigrBlitTint(destImage, font->bitmap, x, y, g->x, g->y, w, h, color);
+	}
 }
 
 // rmf todo: wrap by word, not character
 // including skipping spaces at the start of a line
 std::pair<int, int> Text::WalkthroughBounds(
 	int maxWidth,
-	void (*drawFunctor)(TigrGlyph*, int, int)) const
+	DrawGlyphFunctor* drawFunctor) const
 {
 	const char * p = cachedParsedText.c_str();
 	int line = 0;
@@ -249,7 +287,7 @@ std::pair<int, int> Text::WalkthroughBounds(
 		}
 		if (drawFunctor != nullptr)
 		{
-			drawFunctor(g, lineWidth, line * lineHeight);
+			(*drawFunctor)(g, lineWidth, line * lineHeight);
 		}
 		lineWidth += g->w;
 	}
@@ -259,29 +297,6 @@ std::pair<int, int> Text::WalkthroughBounds(
 std::pair<int, int> Text::GetBoundsRequired(int maxWidth) const
 {
 	return WalkthroughBounds(maxWidth, nullptr);
-}
-
-struct DrawGlyphFunctor
-{
-	const Dimensions& destDim;
-	TigrFont* font;
-
-	DrawFunctor(destDim, font)
-		: destDim(destDim)
-		, font(font)
-	{ }
-
-	void operator()(TigrGlyph* g, int x, int y)
-	{
-		x = x + destDim.x;
-		y = y + destDim.y;
-		// glyph can be partially clipped if we're over the destDim height
-		// (or width, less likely due to wrapping)
-		w = min(g->w, destDim.width - x);
-		h = min(g->h, destDim.height - y);
-		if (w < 0 || h < 0) return;
-		tigrBlitTint(destImage, font->bitmap, x, y, g->x, g->y, w, h, color);
-	}
 }
 
 ErrorOr<Success> Text::Draw(

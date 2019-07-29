@@ -1,6 +1,9 @@
 #ifndef FARB_FONTS_HPP
 #define FARB_FONTS_HPP
 
+#include "../core/BuiltinTypedefs.h"
+#include "../core/NamedType.hpp"
+
 namespace Farb
 {
 

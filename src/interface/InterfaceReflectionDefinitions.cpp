@@ -12,11 +12,11 @@
 #include "../reflection/ReflectionWrappers.hpp"
 #include "../reflection/ReflectionContainers.hpp"
 #include "../serialization/Deserialization.h"
+#include "../utils/MapReduce.hpp"
 
 namespace Farb
 {
 using namespace Reflection;
-
 
 TypeInfo* UI::Dimensions::GetStaticTypeInfo()
 {
@@ -27,32 +27,77 @@ TypeInfo* UI::Dimensions::GetStaticTypeInfo()
 			MakeMemberInfoTyped("x", &UI::Dimensions::x),
 			MakeMemberInfoTyped("y", &UI::Dimensions::y),
 			MakeMemberInfoTyped("width", &UI::Dimensions::width),
-			MakeMemberInfoTyped("height", &UI::Dimensions::height),
+			MakeMemberInfoTyped("height", &UI::Dimensions::height)
 		}
 	};
 
 	return &typeInfo;
 }
 
+struct NineSliceConverter : public Functor<ErrorOr<std::vector<UI::Dimensions> >, const std::vector<int> & >
+{
+	virtual ErrorOr<std::vector<UI::Dimensions> > operator()(const std::vector<int> & in) override
+	{
+		if (in.size() != 4)
+		{
+			return Error("NineSlice requires 4 coordinates, x1, x2, y1, y2. The rest x0, x3, y0, y3 are taken from dimensions.");
+		}
+
+		std::vector<UI::Dimensions> ret(9);
+		using namespace UI::NineSliceLocations;
+
+		// we can't set all the coordinates here, must wait until Image::PostLoad
+		// for the ones derrived from spriteLocation
+		ret[TC].x = in[0];
+		ret[TR].x = in[1];
+		ret[ML].y = in[2];
+		ret[BL].y = in[3];
+		return ret;
+	}
+};
+
+TypeInfo* UI::Image::GetStaticTypeInfo()
+{
+	static NineSliceConverter converter;
+	// rmf todo: fixed length arrays
+	static auto nineSliceTypeInfo = TypeInfoAs<std::vector<UI::Dimensions>, std::vector<int> >(
+		"NineSlice",
+		GetTypeInfo<std::vector<int> >(),
+		converter);
+
+	static TypeInfoStruct<UI::Image> typeInfo {
+		"UI::Image(Table)",
+		nullptr,
+		std::vector<MemberInfo<UI::Image>*> {
+			MakeMemberInfoTyped("source", &UI::Image::filePath),
+			MakeMemberInfoTyped("tiled", &UI::Image::enableTiling),
+			MakeMemberInfoTyped("dimensions", &UI::Image::spriteLocation),
+			// would like to specify this as a vector of 4 ints [x1, x2, y1, y2]
+			MakeMemberInfoTyped("slices", &UI::Image::nineSlice, &nineSliceTypeInfo)
+		},
+		&UI::Image::PostLoad
+	};
+	return &typeInfo;
+}
+
 bool UI::Image::PostLoad(Image& image)
 {
 	static std::unordered_map<std::string, std::weak_ptr<Tigr> > sharedImages;
-	if (!image.source) return false;
+	if (image.filePath.empty()) return false;
 
-	if (sharedImages.count(image.source))
+	if (sharedImages.count(image.filePath))
 	{
 		// rmf todo: what is the weak_ptr interface?
 		// I should probably consider downloading the docs...
-		auto weak = sharedImages[image.source];
-		if (weak.get())
+		if (auto tempShared = sharedImages[image.filePath].lock())
 		{
-			image.bitmap.reset(weak.get(), TigrDeleter());
+			image.bitmap.reset(tempShared.get(), TigrDeleter());
 		}
 	}
 	if (image.bitmap == nullptr)
 	{
 		image.bitmap.reset(tigrLoadImage(image.filePath.c_str()), TigrDeleter());
-		sharedImages[image.source].reset(image.bitmap);
+		sharedImages[image.filePath] = image.bitmap;
 	}
 	if (image.bitmap == nullptr) return false;
 
@@ -62,61 +107,85 @@ bool UI::Image::PostLoad(Image& image)
 		image.spriteLocation.width = image.bitmap->w;
 		image.spriteLocation.height = image.bitmap->h;
 	}
+
+	if (image.nineSlice.size() > 0)
+	{
+		using namespace UI::NineSliceLocations;
+		int xCoordinates [4] { 
+			image.spriteLocation.x,
+			image.nineSlice[TC].x,
+			image.nineSlice[TR].x,
+			image.spriteLocation.x + image.spriteLocation.width
+		};
+
+		int yCoordinates [4] {
+			image.spriteLocation.y,
+			image.nineSlice[ML].y,
+			image.nineSlice[BL].y,
+			image.spriteLocation.y + image.spriteLocation.height
+		};
+
+		auto sliceFromCoords = [&](NineSliceLocations::Enum loc, int x, int y) {
+			image.nineSlice[loc] = {
+				xCoordinates[x],
+				yCoordinates[y],
+				xCoordinates[x+1] - xCoordinates[x],
+				yCoordinates[y+1] - yCoordinates[y]
+			};
+		};
+
+		sliceFromCoords(TL, 0, 0);
+		sliceFromCoords(TC, 1, 0);
+		sliceFromCoords(TR, 2, 0);
+
+		sliceFromCoords(ML, 0, 1);
+		sliceFromCoords(ML, 1, 1);
+		sliceFromCoords(MR, 2, 1);
+
+		sliceFromCoords(BL, 0, 2);
+		sliceFromCoords(BC, 1, 2);
+		sliceFromCoords(BR, 2, 2);
+	}
 	// height and width > 0 is to protect against dividing by 0
+	// and feels nonsensical anyways...
 	return image.bitmap != nullptr
 		&& image.spriteLocation.height > 0
 		&& image.spriteLocation.width > 0;
 }
 
-TypeInfo* UI::Image::GetStaticTypeInfo()
+struct ScalarAssign
 {
-	static TypeInfoStruct<UI::Image> typeInfo {
-		"UI::Image(Table)",
-		nullptr,
-		std::vector<MemberInfo<UI::Image>*> {
-			MakeMemberInfoTyped("source", &UI::Image::filePath)
-			MakeMemberInfoTyped("tiled", &UI::Image::enableTiling),
-			MakeMemberInfoTyped("dimensions", &UI::Image::spriteLocation),
-			// would like to specify this as a vector of 4 ints [x1, x2, y1, y2]
-			MakeMemberInfoTyped("slices", &UI::Image::nineSlice)
-		},
-		&UI::Image::PostLoad
-	};
-	return &typeInfo;
-}
+	static bool Parse(UI::Scalar& object, std::string value)
+	{
+		auto parts = Split(value, ' ');
+		if (parts.size() != 2)
+		{
+			Error("Scalar::ParseAssign requires a single space between amount and units").Log();
+			return false;
+		}
+		bool success = DeserializeString(parts[0], Reflect(object.amount));
+		success = success && Reflect(object.units).AssignString(parts[1]);
+		return success;
+	}
+
+	template<typename T>
+	static bool Numeric(UI::Scalar& object, T value)
+	{
+		object.amount = static_cast<float>(value);
+		object.units = UI::Units::Pixels;
+		return true;
+	}
+};
 
 TypeInfo* UI::Scalar::GetStaticTypeInfo()
 {
-	struct Assign
-	{
-		static bool Parse(UI::Scalar& object, std::string value)
-		{
-			auto parts = Split(value, ' ');
-			if (parts.size() != 2)
-			{
-				Error("Scalar::ParseAssign requires a single space between amount and units").Log();
-				return false;
-			}
-			bool success = DeserializeString(parts[0], Reflect(object.amount));
-			success = success && Reflect(object.units).AssignString(parts[1]);
-			return success;
-		}
-
-		template<typename T>
-		static bool Numeric(UI::Scalar& object, T value)
-		{
-			object.amount = static_cast<float>(value);
-			object.units = UI::Units::Pixels;
-			return true;
-		}
-	};
 
 	static auto typeInfo = TypeInfoCustomLeaf<UI::Scalar>::Construct(
 		"UI::Scalar",
-		Assign::Parse,
-		Assign::Numeric<uint>,
-		Assign::Numeric<int>,
-		Assign::Numeric<float>
+		ScalarAssign::Parse,
+		ScalarAssign::Numeric<uint>,
+		ScalarAssign::Numeric<int>,
+		ScalarAssign::Numeric<float>
 	);
 	return &typeInfo;
 }

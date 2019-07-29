@@ -4,17 +4,39 @@
 namespace Farb
 {
 
+template<typename TRet, typename ...TArgs>
+struct Functor
+{
+	virtual TRet operator()(TArgs... args);
+};
+
+template<typename ...TArgs>
+struct Functor<void, TArgs...>
+{
+	virtual void operator()(TArgs... args);
+};
+
+template<typename TRet, typename ...TArgs>
+struct FunctionPointer : public Functor<TRet, TArgs...>
+{
+	TRet (*func)(TArgs...);
+
+	FunctionPointer(TRet (*func)(TArgs...))
+		:func(func)
+	{ }
+};
+
 // rmf todo: how to specify partial specialization for containers?
 // typename requires a fully resolved type
 // can you template on a template name?
 // maybe inference can just catch all this?
 // type inference probably can't catch a return value...
-template<typename TContainer, typename TIn, typename TOut>
-TContainer<TOut> Map(
-	const TContainerIn& in,
-	TOut(*map)(const TIn &))
+template<template<typename, typename...> typename TContainer, typename TIn, typename TOut, typename ... TInArgs>
+TContainer<TOut, TInArgs...> Map(
+	const TContainer<TIn, TInArgs...>& in,
+	Functor<TOut, const TIn &> & map)
 {
-	TContainer<TOut> result{in.size()};
+	TContainer<TOut, TInArgs...> result{in.size()};
 	for (const auto & val : in)
 	{
 		// rmf todo: which function to use here?
@@ -24,10 +46,10 @@ TContainer<TOut> Map(
 	}
 }
 
-template<typename TContainer, typename TIn>
-void Apply(
-	const TContainerIn& in,
-	bool (*apply) (TIn &),
+template<template<typename, typename...> typename TContainer, typename TIn, typename ...TInArgs>
+bool Apply(
+	const TContainer<TIn, TInArgs...>& in,
+	Functor<bool, TIn &> & apply,
 	bool breakOnFailure = false)
 {
 	bool success = true;
@@ -42,50 +64,59 @@ void Apply(
 	return success;
 }
 
-tempate<typename TContainer, typename TIn, typename TOut>
+template<template<typename, typename...> typename TContainer, typename TIn, typename TOut, typename ... TInArgs>
 TOut Reduce(
-	const TContainer<TIn>& in,
-	TOut(*reduce)(const TOut &, const TIn &),
+	const TContainer<TIn, TInArgs...> & in,
+	Functor<TOut, const TOut &, const TIn &> & reduce,
 	TOut initial = TOut{})
 {
 	TOut result = initial;
 	for (const auto & val : in)
 	{
-		result = reduce(initial, val);
+		result = reduce(result, val);
 	}
 	return result;
 }
 
 template <typename TIn, typename TOut>
-TOut Sum(const TOut & aggregate, const TInt & nextValue)
+struct Sum : Functor<TOut, const TOut &, const TIn &>
 {
-	return aggregate + nextValue;
-}
+	virtual TOut operator()(const TOut & aggregate, const TIn & nextValue) override
+	{
+		return aggregate + nextValue;
+	}
+};
 
 template <typename TIn, typename TOut>
-TOut Max(const TOut & aggregate, const TInt & nextValue)
+struct Max : Functor<TOut, const TOut &, const TIn &>
 {
-	static_assert(typeid(TIn) == typeid(TOut),
-		"max requires in and out to be the same type");
-	if (nextValue > aggregate)
+	virtual TOut operator()(const TOut & aggregate, const TIn & nextValue) override
 	{
-		// rmf note: do I need to static cast here?
-		return nextValue;
+		static_assert(typeid(TIn) == typeid(TOut),
+			"max requires in and out to be the same type");
+		if (nextValue > aggregate)
+		{
+			// rmf note: do I need to static cast here?
+			return nextValue;
+		}
+		return aggregate;
 	}
-	return aggregate;
-}
+};
 
 template <typename TIn, typename TOut>
-TOut Min(const TOut & aggregate, const TInt & nextValue)
+struct Min : Functor<TOut, const TOut &, const TIn &>
 {
-	static_assert(typeid(TIn) == typeid(TOut),
-		"max requires in and out to be the same type");
-	if (nextValue < aggregate)
+	virtual TOut operator()(const TOut & aggregate, const TIn & nextValue) override
 	{
-		return nextValue;
+		static_assert(typeid(TIn) == typeid(TOut),
+			"max requires in and out to be the same type");
+		if (nextValue < aggregate)
+		{
+			return nextValue;
+		}
+		return aggregate;
 	}
-	return aggregate;
-}
+};
 
 } // namespace Farb
 

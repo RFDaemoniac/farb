@@ -3,6 +3,7 @@
 
 #include "../../lib/tigr/tigr.h"
 
+#include "../reflection/ReflectionDeclare.h"
 #include "../core/ErrorOr.hpp"
 #include "Fonts.hpp"
 
@@ -73,18 +74,18 @@ namespace NineSliceLocations
 {
 	enum Enum
 	{
-		UL, UC, UR, // 0, 1, 2
+		TL, TC, TR, // 0, 1, 2
 		ML, MC, MR, // 3, 4, 5
 		BL, BC, BR, // 6, 7, 8
-	}
+	};
 
-	inline bool IsUpper(Enum e) { return e <= UR; }
+	inline bool IsTop(Enum e) { return e <= TR; }
 
 	inline bool IsBottom(Enum e) { return e >= BL; }
 
-	inline bool IsLeft(Enum e) { return e == UL || e == ML || e == BL; }
+	inline bool IsLeft(Enum e) { return e == TL || e == ML || e == BL; }
 
-	inline bool IsRight(Enum e) { return e == UR || e == MR || e == BR; }
+	inline bool IsRight(Enum e) { return e == TR || e == MR || e == BR; }
 }
 
 struct Image

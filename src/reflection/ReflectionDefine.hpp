@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <unordered_map>
 
+#include "../utils/MapReduce.hpp"
 #include "../utils/TypeInspection.hpp"
 #include "ReflectionDeclare.h"
 
@@ -418,7 +419,6 @@ public:
 template<typename T, typename TKey, typename TVal>
 struct TypeInfoTable : public TypeInfo
 {
-
 	TypeInfoTable(HString name)
 		: TypeInfo(name)
 	{ }
@@ -455,6 +455,124 @@ struct TypeInfoTable : public TypeInfo
 	}
 };
 
+
+template <typename T, typename TDeserialize>
+struct TypeInfoAs : public TypeInfo
+{
+	TypeInfo * typeInfo;
+
+	using Converter = Functor<ErrorOr<T>, const TDeserialize &>;
+	Converter & converter;
+
+	std::unique_ptr<std::unordered_map<T*, TDeserialize>> values;
+
+	TypeInfoAs(HString name, TypeInfo* typeInfo, Converter & converter)
+		: TypeInfo(name)
+		, typeInfo(typeInfo)
+		, converter(converter)
+		, values(new std::unordered_map<T*, TDeserialize>)
+	{ }
+
+protected:
+	
+	template<typename ... TArgs>
+	ErrorOr<Success> PassThrough(ErrorOr<Success> (TypeInfo::*function)(byte* obj, TArgs...) const, byte* obj, TArgs... args) const
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		byte* temp = reinterpret_cast<byte*>(&values[t]);
+		CHECK_RETURN((typeInfo->*function)(temp, args...));
+		(*t) = CHECK_RETURN(converter(values[t]));
+		values.erase(t);
+		return Success();
+	}
+	
+
+	template<typename ... TArgs>
+	bool PassThrough(bool (TypeInfo::*function)(byte* obj, TArgs...) const, byte* obj, TArgs... args) const
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		byte* temp = reinterpret_cast<byte*>(&(*values)[t]);
+		bool success = (typeInfo->*function)(temp, args...);
+		if (!success) return false;
+		auto result = converter((*values)[t]);
+		if (result.IsError())
+		{
+			result.GetError().Log();
+			return false;
+		}
+		(*t) = result.GetValue();
+		values->erase(t);
+		return true;
+	}
+
+	virtual bool AssignBool(byte* obj, bool value) const override
+	{
+		return PassThrough(&TypeInfo::AssignBool, obj, value);
+	}
+
+	virtual bool AssignUInt(byte* obj, uint value) const override
+	{
+		return PassThrough(&TypeInfo::AssignUInt, obj, value);
+	}
+
+	virtual bool AssignInt(byte* obj, int value) const override
+	{
+		return PassThrough(&TypeInfo::AssignInt, obj, value);
+	}
+
+	virtual bool AssignFloat(byte* obj, float value) const override
+	{
+		return PassThrough(&TypeInfo::AssignFloat, obj, value);
+	}
+
+	virtual bool AssignString(byte* obj, std::string value) const override
+	{
+		return PassThrough(&TypeInfo::AssignString, obj, value);
+	}
+
+	virtual ErrorOr<ReflectionObject> GetAtKey(
+		byte* obj,
+		HString name) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		byte* temp = reinterpret_cast<byte*>(&(*values)[t]);
+		return typeInfo->GetAtKey(temp, name);
+	}
+
+	virtual bool InsertKey(byte* obj, HString name) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		byte* temp = reinterpret_cast<byte*>(&(*values)[t]);
+		return typeInfo->InsertKey(temp, name);
+	}
+
+	virtual bool ObjectEnd(byte* obj) const override
+	{
+		return PassThrough(&TypeInfo::ObjectEnd, obj);
+	}
+
+	virtual ErrorOr<ReflectionObject> GetAtIndex(
+		byte* obj,
+		int index) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		byte* temp = reinterpret_cast<byte*>(&(*values)[t]);
+		return typeInfo->GetAtIndex(temp, index);
+	}
+
+	virtual bool PushBackDefault(byte* obj) const override
+	{
+		T* t = reinterpret_cast<T*>(obj);
+		byte* temp = reinterpret_cast<byte*>(&(*values)[t]);
+		return typeInfo->PushBackDefault(temp);
+	}
+
+	virtual bool ArrayEnd(byte* obj) const override
+	{
+		return PassThrough(&TypeInfo::ArrayEnd, obj);
+	}
+};
+
 template<typename T>
 struct TypeInfoStruct;
 
@@ -484,7 +602,7 @@ protected:
 	TMem T::* location;
 
 public:
-	MemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfo)
+	MemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfo = GetTypeInfo<TMem>())
 		: MemberInfo<T>(name, typeInfo)
 		, location(location)
 	{ }
@@ -493,12 +611,12 @@ public:
 	{
 		return ReflectionObject(
 			reinterpret_cast<byte*>(&(t->*location)),
-			typeInfo);
+			this->typeInfo);
 	}
 };
 
 template<typename T, typename TMem>
-MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location, TypeInfo* tyopeInfo = GetTypeInfo<TMem>())
+MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfo = GetTypeInfo<TMem>())
 {
 	return new MemberInfoTyped<T, TMem>(name, location, typeInfo);
 }
