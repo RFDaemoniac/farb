@@ -47,4 +47,24 @@ struct NamedType
 
 } // namespace Farb
 
+namespace std
+{
+	template <typename T, typename Tag>
+	struct hash<Farb::NamedType<T, Tag> >
+	{
+		std::size_t operator()(const Farb::NamedType<T, Tag>& namedValue) const
+		{
+			using std::size_t;
+			using std::hash;
+			using std::string;
+
+			// Compute individual hash values for first,
+			// second and third and combine them using XOR
+			// and bit shifting:
+
+			return hash<T>()(namedValue.value);
+		}
+	};
+} // namespace std
+
 #endif // FARB_NAMED_TYPE_HPP

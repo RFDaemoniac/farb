@@ -150,6 +150,8 @@ void tigrFreeFont(TigrFont *font);
 // Prints UTF-8 text onto a bitmap.
 void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const char *text, ...);
 
+TigrGlyph *get(TigrFont *font, int code);
+
 // Returns the width/height of a string.
 int tigrTextWidth(TigrFont *font, const char *text);
 int tigrTextHeight(TigrFont *font, const char *text);

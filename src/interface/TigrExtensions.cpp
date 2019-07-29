@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <string>
+#include <unordered_map>
 
 #include "TigrExtensions.h"
 
@@ -209,12 +211,20 @@ ErrorOr<Success> Text::UpdateParsedText()
 
 struct DrawGlyphFunctor
 {
+	Tigr* destImage;
 	const Dimensions& destDim;
 	TigrFont* font;
+	TPixel color;
 
-	DrawGlyphFunctor(const Dimensions& destDim, TigrFont* font)
-		: destDim(destDim)
+	DrawGlyphFunctor(
+		Tigr* destImage,
+		const Dimensions& destDim,
+		TigrFont* font,
+		TPixel color)
+		: destImage(destImage)
+		, destDim(destDim)
 		, font(font)
+		, color(color)
 	{ }
 
 	void operator()(TigrGlyph* g, int x, int y)
@@ -223,12 +233,12 @@ struct DrawGlyphFunctor
 		y = y + destDim.y;
 		// glyph can be partially clipped if we're over the destDim height
 		// (or width, less likely due to wrapping)
-		w = std::min(g->w, destDim.width - x);
-		h = std::min(g->h, destDim.height - y);
+		int w = std::min(g->w, destDim.width - x);
+		int h = std::min(g->h, destDim.height - y);
 		if (w < 0 || h < 0) return;
 		tigrBlitTint(destImage, font->bitmap, x, y, g->x, g->y, w, h, color);
 	}
-}
+};
 
 // rmf todo: wrap by word, not character
 // including skipping spaces at the start of a line
@@ -266,11 +276,11 @@ std::pair<int, int> Text::WalkthroughBounds(
 		}
 		g = get(font, c);
 		int potentialLineWidth = lineWidth + g->w;
-		if (widthBound >= 0 && potentialLineWidth > widthBound)
+		if (maxWidth >= 0 && potentialLineWidth > maxWidth)
 		{
 			if (potentialLineWidth > maxLineWidth)
 			{
-				maxLineWidth = widthBound;
+				maxLineWidth = maxWidth;
 			}
 			// this is wraparound, don't need to include spaces
 			skipNextSpaceAtStartOfLine = true;
@@ -305,13 +315,22 @@ ErrorOr<Success> Text::Draw(
 {
 	// when would we return error?
 	// if text is clipped?
-
-	DrawGlyphFunctor draw { destDim, GetFont(fontName) };
-	WalkthroughBounds(destDim.width, draw);
+	DrawGlyphFunctor draw { destImage, destDim, GetFont(fontName), color };
+	WalkthroughBounds(destDim.width, &draw);
 
 	return Success();
 }
 
+TigrFont* Text::GetFont(FontName name)
+{
+	static std::unordered_map<FontName, TigrFont*> loadedFonts;
+	if (!loadedFonts.count(name))
+	{
+		Tigr* image = tigrLoadImage(("files/fonts/" + name.value + ".png").c_str());
+		loadedFonts[name] = tigrLoadFont(image, 0);
+	}
+	return loadedFonts[name];
+}
 
 
 } // namespace UI

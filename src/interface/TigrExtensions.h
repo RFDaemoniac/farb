@@ -120,7 +120,7 @@ struct Image
 		, enableTiling(false)
 	{ }
 
-	inline bool Defined() { return !filePath.empty(); }
+	inline bool Defined() const { return !filePath.empty(); }
 
 	Dimensions GetDestinationForSlice(
 		const Dimensions& destTotal,
@@ -173,6 +173,8 @@ struct Paragraph
 }
 */
 
+struct DrawGlyphFunctor;
+
 struct Text
 {
 	std::string unparsedText;
@@ -181,7 +183,7 @@ struct Text
 	FontName fontName;
 	TPixel color;
 
-	inline bool Defined() { return !unparsedText.empty(); }
+	inline bool Defined() const { return !unparsedText.empty(); }
 
 	// rmf todo get context to pass in and use for replacements
 	ErrorOr<Success> UpdateParsedText();
@@ -198,7 +200,9 @@ private:
 	// shared behavior between GetBoundsRequired and Draw
 	std::pair<int, int> WalkthroughBounds(
 		int maxWidth,
-		void (*drawFunctor)(TigrGlyph*, int, int)) const;
+		DrawGlyphFunctor* drawFunctor) const;
+
+	static TigrFont* GetFont(FontName name);
 };
 
 } // namespace UI

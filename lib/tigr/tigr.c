@@ -1432,7 +1432,7 @@ void tigrFreeFont(TigrFont *font)
 	free(font);
 }
 
-static TigrGlyph *get(TigrFont *font, int code)
+TigrGlyph *get(TigrFont *font, int code)
 {
 	unsigned lo = 0, hi = font->numGlyphs;
 	while (lo < hi) {
