@@ -59,10 +59,8 @@ struct NineSliceConverter : public Functor<ErrorOr<std::vector<UI::Dimensions> >
 TypeInfo* UI::Image::GetStaticTypeInfo()
 {
 	static NineSliceConverter converter;
-	// rmf todo: fixed length arrays
 	static auto nineSliceTypeInfo = TypeInfoAs<std::vector<UI::Dimensions>, std::vector<int> >(
 		"NineSlice",
-		GetTypeInfo<std::vector<int> >(),
 		converter);
 
 	static TypeInfoStruct<UI::Image> typeInfo {

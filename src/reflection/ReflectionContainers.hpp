@@ -16,18 +16,55 @@ namespace Reflection
 {
 
 template<typename TVal>
-static auto vectorTypeInfo = TypeInfoArray<std::vector<TVal>, TVal>::template Construct<std::vector<TVal> >(
-	HString("std::vector<" + GetTypeInfo<TVal>()->GetName() + ">"));
-
-
-template<typename TVal>
 struct TemplatedTypeInfo<std::vector<TVal> >
 {
 	static TypeInfo* Get()
 	{
+		static auto vectorTypeInfo = TypeInfoArray<std::vector<TVal>, TVal>::template Construct<std::vector<TVal> >(
+	HString("std::vector<" + GetTypeInfo<TVal>()->GetName() + ">"));
+
 		return &vectorTypeInfo<TVal>;
 	}
 };
+
+// rmf todo: [N] types could be made more efficient if they were done in place
+// rather than reflected as std::vector
+
+template<typename TVal, size_t NSize>
+struct ArrayConverter : public Functor<ErrorOr<TVal[NSize]>, const std::vector<TVal> & >
+{
+	virtual ErrorOr<TVal[NSize]> operator()(const std::vector<TVal> & in) override
+	{
+		if (in.size() != NSize)
+		{
+			return Error("Fixed legnth array expects "
+				+ ToString(NSize)
+				+ " but was given "
+				+ ToString(in.size()));
+		}
+
+		TVal[NSize] ret;
+		for (int i = 0; i < NSize; ++i)
+		{
+			ret[i] = in[i];
+		}
+		return ret;
+	}
+};
+
+template<typename TVal, size_t NSize>
+struct TemplatedTypeInfo<TVal[NSize]>
+{
+	static TypeInfo* Get()
+	{
+		static ArrayConverter<TVal, NSize> converter;
+		static auto typeInfo = TypeInfoAs<TVal[NSize], std::vector<TVal> >(
+			GetTypeInfo<TVal>()->GetName() + "[" + ToString(NSize) + "]",
+			converter);
+		return &typeInfo;
+	}
+};
+
 
 // this is to compensate for the fact that deserialization happens in-place right now
 // but that doesn't work for sets, which need to insert after the object has been constructred

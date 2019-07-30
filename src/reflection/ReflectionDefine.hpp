@@ -456,19 +456,25 @@ struct TypeInfoTable : public TypeInfo
 };
 
 
+// rmf note: pointers seem like they share a similar interface with this temp location
+// except instead of getting values[t] you dereference the pointer...
+
 template <typename T, typename TDeserialize>
 struct TypeInfoAs : public TypeInfo
 {
 	TypeInfo * typeInfo;
 
+	// rmf todo: consider switching converter to take in T& for in-place manipulation
+	// rather than relying on a copy constructor
+	// I generally don't like out parameters though...
 	using Converter = Functor<ErrorOr<T>, const TDeserialize &>;
 	Converter & converter;
 
 	std::unique_ptr<std::unordered_map<T*, TDeserialize>> values;
 
-	TypeInfoAs(HString name, TypeInfo* typeInfo, Converter & converter)
+	TypeInfoAs(HString name, Converter & converter)
 		: TypeInfo(name)
-		, typeInfo(typeInfo)
+		, typeInfo(GetTypeInfo<TDeserialize>())
 		, converter(converter)
 		, values(new std::unordered_map<T*, TDeserialize>)
 	{ }

@@ -19,6 +19,7 @@ using namespace Input;
 namespace Tests
 {
 
+constexpr float windowDuration = 0.3f;
 
 class TestUITree : public ITest
 {
@@ -35,7 +36,7 @@ public:
 		Window window{160, 90, "Test Window"};
 		Node empty;
 		float elapsedTime = 0.0f;
-		while (elapsedTime < 1.0f)
+		while (elapsedTime < windowDuration)
 		{
 			success = window.Render(empty);
 			elapsedTime += tigrTime();
@@ -46,6 +47,19 @@ public:
 			assert(success);
 		}
 		farb_print(success, "render empty Tree");
+		
+		elapsedTime = 0.0f;
+		while (elapsedTime < windowDuration)
+		{
+			success = window.Render(root);
+			elapsedTime += tigrTime();
+			if (!success)
+			{
+				farb_print(success, "render test Tree");
+			}
+			assert(success);
+		}
+		farb_print(success, "render test Tree");
 		
 		return true;
 	}
