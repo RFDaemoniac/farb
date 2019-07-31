@@ -1,6 +1,7 @@
 #ifndef FARB_REFLECTION_DEFINE_H
 #define FARB_REFLECTION_DEFINE_H
 
+#include <cstring>
 #include <memory>
 #include <iostream>
 #include <limits.h>
@@ -414,6 +415,32 @@ public:
 		T* t = reinterpret_cast<T*>(obj);
 		return pArrayEnd(*t);
 	}
+
+	// rmf todo: indentation levels, and optionally removing all whitespace
+	// this is not the same as a serialization function
+	// though it's pretty close, so maybe that should be an option, too
+	// should only return error if ToString<TVal> returns an error
+	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	{
+		std::string ret;
+		T* t = reinterpret_cast<T*>(obj);
+		std::string line = "[ ";
+		line.reserve(SerializationLineLengthTarget * 2);
+		for (int index = 0; pBoundsCheck(*t, index); ++index)
+		{
+			TVal & value = pAt(*t, index);
+			line += CHECK_RETURN(Reflect(value).ToString()) + ", ";
+			if (line.size() > SerializationLineLengthTarget)
+			{
+				ret += line + "\n\t";
+				line = "";
+			}
+		}
+		line += line.size() == 0 || strncmp(&line.back(), " ", 1) == 0
+			? "]" : " ]";
+		ret += line;
+		return ret;
+	}
 };
 
 template<typename T, typename TKey, typename TVal>
@@ -453,6 +480,8 @@ struct TypeInfoTable : public TypeInfo
 		}
 		return t->insert({key, TVal()}).second;
 	}
+
+	// rmf todo: iterate over members
 };
 
 
@@ -577,6 +606,8 @@ protected:
 	{
 		return PassThrough(&TypeInfo::ArrayEnd, obj);
 	}
+
+	// rmf note: convert back for ToString
 };
 
 template<typename T>
@@ -714,6 +745,31 @@ struct TypeInfoStruct : public TypeInfo
 		if (pPostLoad == nullptr) return true;
 		T* t = reinterpret_cast<T*>(obj);
 		return pPostLoad(*t);
+	}
+
+	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	{
+		std::string ret;
+		T* t = reinterpret_cast<T*>(obj);
+		std::string line = "{ ";
+		line.reserve(SerializationLineLengthTarget * 2);
+
+		for (auto member : vMembers)
+		{
+			line += member->name + ": ";
+			line += CHECK_RETURN(member->Get(t).ToString());
+			line += ", ";
+			if (line.size() > SerializationLineLengthTarget)
+			{
+				ret += line + "\n\t";
+				line = "";
+			}
+		}
+
+		line += line.size() == 0 || strncmp(&line.back(), " ", 1) == 0
+			? "}" : " }";
+		ret += line;
+		return ret;
 	}
 };
 

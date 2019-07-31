@@ -16,6 +16,28 @@ struct Functor<void, TArgs...>
 	virtual void operator()(TArgs... args);
 };
 
+template<typename TRet, typename TArg, typename ...TArgs>
+struct CurriedFunctor : public Functor<TRet, TArgs...>
+{
+	Functor<TRet, TArg, TArgs...>& functor;
+	TArg value;
+
+	CurriedFunctor(Functor<TRet, TArg, TArgs...>& functor, TArg value)
+		: functor(functor)
+		, value(value)
+	{ }
+
+	CurriedFunctor(CurriedFunctor&& other)
+		: functor(other.functor)
+		, value(other.value)
+	{ }
+
+	virtual TRet operator()(TArgs... args) override
+	{
+		return functor(value, args...);
+	}
+};
+
 template<typename TRet, typename ...TArgs>
 struct FunctionPointer : public Functor<TRet, TArgs...>
 {
@@ -24,7 +46,30 @@ struct FunctionPointer : public Functor<TRet, TArgs...>
 	FunctionPointer(TRet (*func)(TArgs...))
 		:func(func)
 	{ }
+
+	virtual TRet operator()(TArgs... args) override
+	{
+		return func(args...);
+	}
 };
+
+template <typename T, typename TRet, typename ...TArgs>
+struct MemberFunction : public Functor<TRet, TArgs...>
+{
+	T & object;
+	TRet (T::*func)(TArgs...);
+
+	MemberFunction(T & object, TRet (T::*func)(TArgs...))
+		: object(object)
+		, func(func)
+	{ }
+
+	virtual TRet operator()(TArgs... args) override
+	{
+		return object.*func(args...);
+	}
+};
+
 
 // rmf todo: how to specify partial specialization for containers?
 // typename requires a fully resolved type

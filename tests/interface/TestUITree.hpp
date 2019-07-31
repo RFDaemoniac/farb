@@ -28,7 +28,9 @@ public:
 	{
 		std::cout << "Interface" << std::endl;
 
+		std::cout << "what 5";
 		Node root;
+		std::cout << "what 3";
 		bool success = DeserializeFile("./tests/files/TestUITree.json", Reflect(root));
 		farb_print(success, "deserialize UI Tree");
 		assert(success);
@@ -47,7 +49,7 @@ public:
 			assert(success);
 		}
 		farb_print(success, "render empty Tree");
-		
+
 		elapsedTime = 0.0f;
 		while (elapsedTime < windowDuration)
 		{

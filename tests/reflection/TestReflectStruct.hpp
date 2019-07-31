@@ -47,6 +47,17 @@ public:
 			sReflect.GetAtKey("nonexistent member"),
 			"reflect struct get nonexistent member");
 
+		auto result = sReflect.ToString();
+		if (result.IsError())
+		{
+			farb_print(false, "reflect struct to string");
+		}
+		else
+		{
+			farb_print(true, "reflect struct to string: " + result.GetValue());
+		}
+		assert(!result.IsError());
+
 		return true;
 	}
 };

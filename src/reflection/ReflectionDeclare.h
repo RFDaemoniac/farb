@@ -15,6 +15,10 @@ namespace Farb
 namespace Reflection
 {
 
+// this is not a strict limit
+// we will wrap after reaching 100 characters and finishing the current serialization
+constexpr int SerializationLineLengthTarget = 100;
+
 struct TypeInfo;
 
 struct ReflectionObject

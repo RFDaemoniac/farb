@@ -20,10 +20,10 @@ struct TemplatedTypeInfo<std::vector<TVal> >
 {
 	static TypeInfo* Get()
 	{
-		static auto vectorTypeInfo = TypeInfoArray<std::vector<TVal>, TVal>::template Construct<std::vector<TVal> >(
+		static auto typeInfo = TypeInfoArray<std::vector<TVal>, TVal>::template Construct<std::vector<TVal> >(
 	HString("std::vector<" + GetTypeInfo<TVal>()->GetName() + ">"));
 
-		return &vectorTypeInfo<TVal>;
+		return &typeInfo;
 	}
 };
 
@@ -43,7 +43,7 @@ struct ArrayConverter : public Functor<ErrorOr<TVal[NSize]>, const std::vector<T
 				+ ToString(in.size()));
 		}
 
-		TVal[NSize] ret;
+		TVal ret[NSize];
 		for (int i = 0; i < NSize; ++i)
 		{
 			ret[i] = in[i];
