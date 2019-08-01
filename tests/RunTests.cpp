@@ -13,17 +13,14 @@ g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 
 using namespace Farb::Tests;
 
-template<typename TTest, typename ... TRest>
+template<typename TTest, typename ... TTests>
 bool Run()
 {
-	if constexpr(sizeof...(TRest) == 0)
-	{
-		return TTest().RunTests();
-	}
-	else
-	{
-		return TTest().RunTests() && Run<TRest...>();
-	}
+    // ... copies the previous statement for each of TTests
+    // comma operator combines them in
+    bool success = true;
+    ((success &= TTests().RunTests()),...);
+    return success;
 }
 
 int main(void)

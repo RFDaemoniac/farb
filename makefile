@@ -20,6 +20,9 @@ TEST_HEADERS = $(wildcard tests/*/*.h*)
 
 all: build/bin/runtests build/link/farb.a
 
+debug: CXXFLAGS += -DDebug -g
+debug: build/bin/runtests
+
 farb: build/link/farb.a
 
 tests: build/bin/runtests

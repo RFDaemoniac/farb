@@ -53,20 +53,23 @@ struct FunctionPointer : public Functor<TRet, TArgs...>
 	}
 };
 
-template <typename T, typename TRet, typename ...TArgs>
-struct MemberFunction : public Functor<TRet, TArgs...>
+
+// this lets you convert t.member(params) to func(t, params)
+// what I'm really interested in is the other direction
+// could use another operator (-> or | )
+// see example at http://pfultz2.com/blog/2014/09/05/pipable-functions/
+template <typename TRet, typename T, typename ...TArgs>
+struct MemberFunction : public Functor<TRet, T&, TArgs...>
 {
-	T & object;
 	TRet (T::*func)(TArgs...);
 
-	MemberFunction(T & object, TRet (T::*func)(TArgs...))
-		: object(object)
-		, func(func)
+	MemberFunction(TRet (T::*func)(TArgs...))
+		: func(func)
 	{ }
 
-	virtual TRet operator()(TArgs... args) override
+	virtual TRet operator()(T& t, TArgs... args) override
 	{
-		return object.*func(args...);
+		return t.*func(args...);
 	}
 };
 

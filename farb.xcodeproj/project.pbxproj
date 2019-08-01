@@ -6,35 +6,12 @@
 	objectVersion = 50;
 	objects = {
 
-/* Begin PBXCopyFilesBuildPhase section */
-		00CC9B4D22F2693B00A2B024 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		00091DAD22F269E00050A1E9 /* tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = tests; path = /Users/robin/Documents/Repositories/farb/build/Debug/tests; sourceTree = "<absolute>"; };
 		00CC9B5822F2699900A2B024 /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
 		00CC9B5922F2699900A2B024 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; path = lib; sourceTree = "<group>"; };
 		00CC9B5A22F2699900A2B024 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; path = src; sourceTree = "<group>"; };
 		00CC9B5B22F269AD00A2B024 /* runtests */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = runtests; path = build/bin/runtests; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		00CC9B4C22F2693B00A2B024 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		00CC9B4022F2683E00A2B024 = {
@@ -52,7 +29,7 @@
 /* Begin PBXLegacyTarget section */
 		00CC9B4522F2683E00A2B024 /* farb */ = {
 			isa = PBXLegacyTarget;
-			buildArgumentsString = "$(ACTION) tests";
+			buildArgumentsString = "$(ACTION) debug";
 			buildConfigurationList = 00CC9B4822F2683E00A2B024 /* Build configuration list for PBXLegacyTarget "farb" */;
 			buildPhases = (
 			);
@@ -66,26 +43,6 @@
 		};
 /* End PBXLegacyTarget section */
 
-/* Begin PBXNativeTarget section */
-		00CC9B4E22F2693B00A2B024 /* tests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 00CC9B5422F2693B00A2B024 /* Build configuration list for PBXNativeTarget "tests" */;
-			buildPhases = (
-				00CC9B4B22F2693B00A2B024 /* Sources */,
-				00CC9B4C22F2693B00A2B024 /* Frameworks */,
-				00CC9B4D22F2693B00A2B024 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = tests;
-			productName = tests;
-			productReference = 00091DAD22F269E00050A1E9 /* tests */;
-			productType = "com.apple.product-type.tool";
-		};
-/* End PBXNativeTarget section */
-
 /* Begin PBXProject section */
 		00CC9B4122F2683E00A2B024 /* Project object */ = {
 			isa = PBXProject;
@@ -94,9 +51,6 @@
 				ORGANIZATIONNAME = "Robinson Farrar";
 				TargetAttributes = {
 					00CC9B4522F2683E00A2B024 = {
-						CreatedOnToolsVersion = 10.3;
-					};
-					00CC9B4E22F2693B00A2B024 = {
 						CreatedOnToolsVersion = 10.3;
 					};
 				};
@@ -114,20 +68,9 @@
 			projectRoot = "";
 			targets = (
 				00CC9B4522F2683E00A2B024 /* farb */,
-				00CC9B4E22F2693B00A2B024 /* tests */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXSourcesBuildPhase section */
-		00CC9B4B22F2693B00A2B024 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		00CC9B4622F2683E00A2B024 /* Debug */ = {
@@ -260,28 +203,6 @@
 			};
 			name = Release;
 		};
-		00CC9B5522F2693B00A2B024 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-			};
-			name = Debug;
-		};
-		00CC9B5622F2693B00A2B024 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -299,15 +220,6 @@
 			buildConfigurations = (
 				00CC9B4922F2683E00A2B024 /* Debug */,
 				00CC9B4A22F2683E00A2B024 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		00CC9B5422F2693B00A2B024 /* Build configuration list for PBXNativeTarget "tests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				00CC9B5522F2693B00A2B024 /* Debug */,
-				00CC9B5622F2693B00A2B024 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

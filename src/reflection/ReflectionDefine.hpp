@@ -619,11 +619,9 @@ struct MemberInfo
 	friend struct TypeInfoStruct<T>;
 protected:
 	HString name;
-	TypeInfo* typeInfo;
 
-	MemberInfo(HString name, TypeInfo* typeInfo)
+	MemberInfo(HString name)
 		: name(name)
-		, typeInfo(typeInfo)
 	{ }
 
 public:
@@ -637,25 +635,31 @@ struct MemberInfoTyped : public MemberInfo<T>
 {
 protected:
 	TMem T::* location;
+	// typeInfoOverride rather than typeInfo because initializing
+	// typeInfo at construction resulted in circular dependencies for
+	// types that contain members dependent on their type
+	// (i.e. UI::Note.children std::vector<UI::Node>)
+	TypeInfo* typeInfoOverride;
 
 public:
-	MemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfo = GetTypeInfo<TMem>())
-		: MemberInfo<T>(name, typeInfo)
+	MemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfoOverride = nullptr)
+		: MemberInfo<T>(name)
 		, location(location)
+		, typeInfoOverride(typeInfoOverride)
 	{ }
 
 	virtual ReflectionObject Get(T* t) const override
 	{
 		return ReflectionObject(
 			reinterpret_cast<byte*>(&(t->*location)),
-			this->typeInfo);
+			typeInfoOverride != nullptr ? typeInfoOverride : GetTypeInfo<TMem>());
 	}
 };
 
 template<typename T, typename TMem>
-MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfo = GetTypeInfo<TMem>())
+MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfoOverride = nullptr)
 {
-	return new MemberInfoTyped<T, TMem>(name, location, typeInfo);
+	return new MemberInfoTyped<T, TMem>(name, location, typeInfoOverride);
 }
 
 template<typename T>
@@ -664,6 +668,7 @@ struct TypeInfoStruct : public TypeInfo
 	// rmf note: at first all TypeInfo would have the opportunity for a parent type
 	// but I figured it was mostly unecessary for the others. Feel free to change in the future.
 	TypeInfo* parentType;
+	// rmf todo: change to value_ptr?
 	std::vector<MemberInfo<T>*> vMembers;
 	bool(*pPostLoad)(T& object);
 

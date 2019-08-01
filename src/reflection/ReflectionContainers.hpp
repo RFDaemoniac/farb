@@ -18,10 +18,13 @@ namespace Reflection
 template<typename TVal>
 struct TemplatedTypeInfo<std::vector<TVal> >
 {
-	static TypeInfo* Get()
+	// rmf note: this childName parameter was introduced as a way to avoid
+	// circular dependencies for UI::Node.children which is a std::vector<UI::Node>
+	// this feels a little hacky
+	static TypeInfo* Get(HString childName = GetTypeInfo<TVal>()->GetName())
 	{
 		static auto typeInfo = TypeInfoArray<std::vector<TVal>, TVal>::template Construct<std::vector<TVal> >(
-	HString("std::vector<" + GetTypeInfo<TVal>()->GetName() + ">"));
+	HString("std::vector<" + childName + ">"));
 
 		return &typeInfo;
 	}
