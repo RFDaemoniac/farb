@@ -18,7 +18,7 @@ SOURCE_OBJECTS = $(addprefix build/tmp/, $(notdir $(SOURCE_FILES:%.cpp=%.o)))
 TEST_HEADERS = $(wildcard tests/*/*.h*)
 # there are no test files or objects other than RunTests, which is specified explicity
 
-all: build/bin/test build/link/farb.a
+all: build/bin/runtests build/link/farb.a
 
 farb: build/link/farb.a
 
