@@ -218,16 +218,13 @@ bool DeserializeString(std::string input, ReflectionObject reflect)
 
 bool DeserializeFile(std::string filePath, ReflectionObject reflect)
 {
-	std::cout << " what 4";
 	DeserializationParser parser(reflect);
-	std::cout << " what 1";
 	std::ifstream inputFile(filePath);
 	if (inputFile.fail())
 	{
 		Error("Couldn't open filePath: " + filePath).Log();
 		return false;
 	}
-	std::cout << " what 2";
 	return json::sax_parse(inputFile, &parser);
 }
 

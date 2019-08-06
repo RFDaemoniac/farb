@@ -4,15 +4,16 @@
 
 #include "UINode.h"
 #include "Fonts.hpp"
+#include "Window.h"
 #include "InputHandler.hpp"
 #include "TigrExtensions.h"
-#include "../reflection/ReflectionDeclare.h"
-#include "../reflection/ReflectionDefine.hpp"
-#include "../reflection/ReflectionBasics.h"
-#include "../reflection/ReflectionWrappers.hpp"
-#include "../reflection/ReflectionContainers.hpp"
-#include "../serialization/Deserialization.h"
-#include "../utils/MapReduce.hpp"
+#include "ReflectionDeclare.h"
+#include "ReflectionDefine.hpp"
+#include "ReflectionBasics.h"
+#include "ReflectionWrappers.hpp"
+#include "ReflectionContainers.hpp"
+#include "Deserialization.h"
+#include "MapReduce.hpp"
 
 namespace Farb
 {

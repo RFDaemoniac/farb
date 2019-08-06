@@ -28,14 +28,11 @@ public:
 	{
 		std::cout << "Interface" << std::endl;
 
-		std::cout << "what 5";
 		Node root;
-		std::cout << "what 3";
 		auto rootReflect = Reflect(root);
-		std::cout << "what 6";
 		bool success = DeserializeFile("./tests/files/TestUITree.json", rootReflect);
 		farb_print(success, "deserialize UI Tree");
-		//assert(success);
+		assert(success);
 
 		Window window{160, 90, "Test Window"};
 		Node empty;

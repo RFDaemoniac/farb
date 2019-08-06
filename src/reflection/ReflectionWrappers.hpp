@@ -3,8 +3,8 @@
 
 #include "ReflectionDeclare.h"
 #include "ReflectionDefine.hpp"
-#include "../core/NamedType.hpp"
-#include "../core/ValueCheckedType.hpp"
+#include "NamedType.hpp"
+#include "ValueCheckedType.hpp"
 
 namespace Farb
 {

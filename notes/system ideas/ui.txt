@@ -1,3 +1,8 @@
+todo:
+	animation
+	remove image FitContents scaling because it's unsupported
+	
+
 how to do animations?
 I like css's animated properties over time
 Keyframes also seems like a good abstraction

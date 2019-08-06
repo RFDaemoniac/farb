@@ -2,6 +2,7 @@
 #define FARB_CONTAINERS_HPP
 
 #include <vector>
+#include "Error.hpp"
 
 namespace Farb
 {

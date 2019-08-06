@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#include "Containers.hpp"
 #include "ReflectionDeclare.h"
 #include "ReflectionDefine.hpp"
 
@@ -162,6 +163,23 @@ struct TemplatedTypeInfo<std::unordered_map<TKey, TVal> >
 	}
 };
 
+template<typename T>
+struct TemplatedTypeInfo<Tree<T> >
+{
+	static TypeInfo* Get()
+	{
+		static TypeInfoStruct<Tree<T> > typeInfo{
+			"Tree<" + GetTypeInfo<T>()->GetName() + ">",
+			nullptr,
+			std::vector<MemberInfo<Tree<T> >*> {
+				MakeMemberInfoTyped("value", &Tree<T>::value),
+				MakeMemberInfoTyped("children", &Tree<T>::children)
+			}
+		};
+
+		return &typeInfo;
+	}
+};
 
 } // namespace Reflection
 

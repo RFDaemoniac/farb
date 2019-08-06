@@ -91,8 +91,6 @@ struct Node
 
 } // namespace UI
 
-
-template <> Reflection::TypeInfo* Reflection::GetTypeInfo<UI::Units>();
 template <> Reflection::TypeInfo* Reflection::GetTypeInfo<UI::SizeType>();
 
 } // namespace Farb

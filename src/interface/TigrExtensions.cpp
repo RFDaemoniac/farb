@@ -324,6 +324,10 @@ ErrorOr<Success> Text::Draw(
 TigrFont* Text::GetFont(FontName name)
 {
 	static std::unordered_map<FontName, TigrFont*> loadedFonts;
+	if (name.value.empty())
+	{
+		return tfont;
+	}
 	if (!loadedFonts.count(name))
 	{
 		Tigr* image = tigrLoadImage(("files/fonts/" + name.value + ".png").c_str());

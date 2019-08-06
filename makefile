@@ -13,6 +13,7 @@ LIB_OBJECTS = $(addprefix build/tmp/, $(notdir $(LIB_FILES:%.c=%.o)))
 SOURCE_HEADERS = $(wildcard src/*/*.h*)
 SOURCE_FILES = $(wildcard src/*/*.cpp)
 SOURCE_OBJECTS = $(addprefix build/tmp/, $(notdir $(SOURCE_FILES:%.cpp=%.o)))
+SOURCE_INCLUDES = $(addprefix -I src/, $(MODULES))
 # this excludes the final target Farb.o
 
 TEST_HEADERS = $(wildcard tests/*/*.h*)
@@ -34,15 +35,15 @@ build/tmp/tigr.o: lib/tigr/tigr.c lib/tigr/tigr.h
 	gcc -c -o build/tmp/tigr.o lib/tigr/tigr.c -Wno-deprecated-declarations
 
 build/tmp/%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(SOURCE_INCLUDES) -c $< -o $@
 	printf "build/tmp/" > build/tmp/$*.make
-	$(CXX) $(CXXFLAGS) -MM $< >> build/tmp/$*.make
+	$(CXX) $(CXXFLAGS) $(SOURCE_INCLUDES) -MM $< >> build/tmp/$*.make
 
 -include $(SOURCE_OBJECTS:.o=.make)
 -include $(LIB_OBJECTS:.o=.make)
 
 build/bin/runtests: build/tmp/RunTests.o $(LIB_HEADERS) $(SOURCE_OBJECTS) $(TEST_HEADERS) $(SOURCE_HEADERS) $(LIB_OBJECTS)
-	$(CXX) $(CXXFLAGS) -o ./build/bin/runtests build/tmp/RunTests.o $(SOURCE_OBJECTS) $(LIB_OBJECTS) $(TARGET_LINKS)
+	$(CXX) $(CXXFLAGS) $(SOURCE_INCLUDES) -o ./build/bin/runtests build/tmp/RunTests.o $(SOURCE_OBJECTS) $(LIB_OBJECTS) $(TARGET_LINKS)
 
 build/link/farb.a: $(SOURCE_HEADERS) $(SOURCE_OBJECTS) $(LIB_HEADERS) $(LIB_OBJECTS)
 	ar rvs build/link/farb.a $(SOURCE_OBJECTS) $(LIB_OBJECTS)

@@ -607,7 +607,16 @@ protected:
 		return PassThrough(&TypeInfo::ArrayEnd, obj);
 	}
 
-	// rmf note: convert back for ToString
+	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	{
+		TypeInfo* defaultTypeInfo = GetTypeInfo<T>();
+		if (defaultTypeInfo == this)
+		{
+			// rmf todo: convert back for ToString? Always?
+			return Error("ToString not implemented for TypeInfoAs");
+		}
+		return defaultTypeInfo->ToString(obj);
+	}
 };
 
 template<typename T>

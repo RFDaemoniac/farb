@@ -4,6 +4,8 @@
 #include <set>
 
 #include "Window.h"
+#include "ReflectionDeclare.h"
+#include "ReflectionContainers.hpp" // for ToString(Tree<Dimensions>)
 
 namespace Farb
 {
@@ -31,6 +33,7 @@ bool Window::Render(const Node& tree)
 	if (renderResult.IsError())
 	{
 		renderResult.GetError().Log();
+		std::cout << Reflection::ToString(dimensions) << std::endl;
 		return false;
 	}
 	return true;
@@ -43,9 +46,9 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 	case Units::Pixels:
 		return static_cast<int>(round(scalar.amount));
 	case Units::PercentOfParent:
-		return static_cast<int>(round(scalar.amount * parentSize));
+		return static_cast<int>(round(scalar.amount * parentSize / 100.f));
 	case Units::PercentOfScreen:
-		return static_cast<int>(round(scalar.amount * windowSize));
+		return static_cast<int>(round(scalar.amount * windowSize / 100.f));
 	case Units::None:
 		return Error("UI::Node scalar unit is None");
 	}
@@ -110,7 +113,9 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 
 	auto computeWidthFitContentsText = [&]() -> ErrorOr<Success>
 	{
-		return Error("Text width FitContents not implemented");
+		auto bounds = node.text.GetBoundsRequired(-1);
+		dimensions.width = bounds.first;
+		return Success();
 	};
 
 	auto computeHeightFitContentsImage = [&]() -> ErrorOr<Success>
@@ -154,7 +159,18 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 
 	auto computeHeightFitContentsText = [&]() -> ErrorOr<Success>
 	{
-		return Error("Text height FitContents not implemented");
+		int maxWidth = -1;
+		if (computedAttributes.count(DimensionAttribute::Width))
+		{
+			maxWidth = dimensions.width;
+		}
+		else
+		{
+			maxWidth = parent.width;
+		}
+		auto bounds = node.text.GetBoundsRequired(maxWidth);
+		dimensions.height = bounds.second;
+		return Success();
 	};
 
 	// because the dependencyOrdering has already been computed
@@ -254,11 +270,11 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 		case DimensionAttribute::Height:
 			if (spec & NodeSpec::Height)
 			{
-				switch(node.width.type)
+				switch(node.height.type)
 				{
 				case SizeType::Scalar:
-					dimensions.width = CHECK_RETURN(ComputeScalar(
-						window.width, parent.width, node.width.scalar));
+					dimensions.height = CHECK_RETURN(ComputeScalar(
+						window.height, parent.height, node.height.scalar));
 					break;
 				case SizeType::FitContents:
 					if (!node.image.filePath.empty())

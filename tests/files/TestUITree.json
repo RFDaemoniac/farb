@@ -5,10 +5,10 @@
 		"type": "MouseClick",
 		"response" : "ClickButton"
 	},
-	"top": 100,
+	"top": 10,
 	"left": "10 %",
 	"height": "FitContents",
-	"width": "80 %",
+	"width": "FitContents",
 	"children":
 	[
 		{

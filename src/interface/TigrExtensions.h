@@ -207,6 +207,7 @@ private:
 
 } // namespace UI
 
+template <> Reflection::TypeInfo* Reflection::GetTypeInfo<UI::Units>();
 
 } // namespace Farb
 
