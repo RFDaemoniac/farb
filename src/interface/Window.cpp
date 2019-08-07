@@ -21,6 +21,7 @@ Window::Window(int width, int height, std::string name)
 
 bool Window::Render(const Node& tree)
 {
+	tigrClear(window.get(), tigrRGB(0,0,0));
 	Dimensions root{ 0, 0, window->w, window->h };
 	auto result = ComputeDimensions(root, root, tree);
 	if (result.IsError())
@@ -36,6 +37,7 @@ bool Window::Render(const Node& tree)
 		std::cout << Reflection::ToString(dimensions) << std::endl;
 		return false;
 	}
+	tigrUpdate(window.get());
 	return true;
 }
 
@@ -355,7 +357,6 @@ ErrorOr<Success> Window::Render(
 	const Tree<Dimensions>& dimensions,
 	const Node& node)
 {
-	tigrClear(window.get(), tigrRGB(0,0,0));
 	Dimensions destination = dimensions.value;
 	destination.x += parentAbsoluteX;
 	destination.y += parentAbsoluteY;
@@ -364,10 +365,9 @@ ErrorOr<Success> Window::Render(
 	{
 		CHECK_RETURN(node.image.Draw(window.get(), destination));
 	}
-	if (!node.text.unparsedText.empty())
+	if (node.text.Defined())
 	{
-		//rmf todo: render text line by line
-		return Error("Rendering text is not yet impelmented");
+		CHECK_RETURN(node.text.Draw(window.get(), destination));
 	}
 	if (dimensions.children.size() != node.children.size())
 	{
@@ -381,7 +381,6 @@ ErrorOr<Success> Window::Render(
 			dimensions.children[i],
 			node.children[i]));
 	}
-	tigrUpdate(window.get());
 	return Success();
 }
 

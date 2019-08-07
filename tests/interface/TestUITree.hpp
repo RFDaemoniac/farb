@@ -19,7 +19,7 @@ using namespace Input;
 namespace Tests
 {
 
-constexpr float windowDuration = 0.3f;
+constexpr float windowDuration = 2.3f;
 
 class TestUITree : public ITest
 {
