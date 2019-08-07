@@ -361,6 +361,16 @@ ErrorOr<Success> Window::Render(
 	destination.x += parentAbsoluteX;
 	destination.y += parentAbsoluteY;
 
+	if (node.backgroundColor.a > 0)
+	{
+		tigrFill(
+			window.get(),
+			destination.x,
+			destination.y,
+			destination.width,
+			destination.height,
+			node.backgroundColor);
+	}
 	if (node.image.Defined())
 	{
 		CHECK_RETURN(node.image.Draw(window.get(), destination));

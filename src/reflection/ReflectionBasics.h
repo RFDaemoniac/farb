@@ -10,6 +10,8 @@ namespace Reflection
 {
 
 template <> TypeInfo* GetTypeInfo<bool>();
+template <> TypeInfo* GetTypeInfo<char>();
+template <> TypeInfo* GetTypeInfo<unsigned char>();
 template <> TypeInfo* GetTypeInfo<uint>();
 template <> TypeInfo* GetTypeInfo<int>();
 template <> TypeInfo* GetTypeInfo<float>();

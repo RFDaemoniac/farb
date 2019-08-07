@@ -52,6 +52,47 @@ TypeInfo* GetTypeInfo<bool>()
 }
 
 template <>
+TypeInfo* GetTypeInfo<char>()
+{
+	static auto charTypeInfo = TypeInfoCustomLeaf<char>::Construct(
+		"char",
+		HString("uint"), static_cast<bool (*)(char&, uint)>([](char& object, uint value)
+		{
+			object = static_cast<char>(value);
+			return true;
+		}),
+		HString("int"), static_cast<bool (*)(char&, int)>([](char& object, int value)
+		{
+			object = static_cast<char>(value);
+			return true;
+		})
+	);
+	return &charTypeInfo;
+}
+
+
+template <>
+TypeInfo* GetTypeInfo<unsigned char>()
+{
+	static auto ucharTypeInfo = TypeInfoCustomLeaf<unsigned char>::Construct(
+		"char",
+		HString("uint"), static_cast<bool (*)(unsigned char&, uint)>([](unsigned char& object, uint value)
+		{
+			object = static_cast<unsigned char>(value);
+			return true;
+		}),
+		HString("int"), static_cast<bool (*)(unsigned char&, int)>([](unsigned char& object, int value)
+		{
+			if (value < 0) return false;
+			object = static_cast<unsigned char>(value);
+			return true;
+		})
+	);
+	return &ucharTypeInfo;
+}
+
+
+template <>
 TypeInfo* GetTypeInfo<uint>()
 {
 	static auto uintTypeInfo = TypeInfoCustomLeaf<uint>::Construct(

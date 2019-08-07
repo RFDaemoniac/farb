@@ -5,12 +5,35 @@
 #include "ReflectionDefine.hpp"
 #include "NamedType.hpp"
 #include "ValueCheckedType.hpp"
+#include "BuiltinTypedefs.h"
 
 namespace Farb
 {
 
 namespace Reflection
 {
+
+
+template<typename T>
+struct TemplatedTypeInfo<value_ptr<T> >
+{
+	struct Converter
+	{
+		virtual ErrorOr<value_ptr<T> > operator()(const T & in) override
+		{
+			return value_ptr<T>(in);
+		}
+	};
+
+	static TypeInfo* Get()
+	{
+		static Converter converter;
+		static TypeInfoAs<value_ptr<T>, T> typeInfo{
+			"value_ptr<" + GetTypeInfo<T>()->GetName() + ">",
+			converter};
+		return &typeInfo;
+	}
+};
 
 template<typename T, typename Tag>
 struct TemplatedTypeInfo<NamedType<T, Tag>>

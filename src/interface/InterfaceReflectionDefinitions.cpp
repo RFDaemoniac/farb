@@ -19,6 +19,26 @@ namespace Farb
 {
 using namespace Reflection;
 
+template<>
+TypeInfo* Reflection::GetTypeInfo<TPixel>()
+{
+	// in TPixel the layout is b, g, r, a
+	// but we are intentionally ordering reflection as rgba instead
+	// because that is my preference
+	static TypeInfoStruct<TPixel> typeInfo {
+		"TPixel",
+		nullptr,
+		std::vector<MemberInfo<TPixel>*> {
+			MakeMemberInfoTyped("r", &TPixel::r),
+			MakeMemberInfoTyped("g", &TPixel::g),
+			MakeMemberInfoTyped("b", &TPixel::b),
+			MakeMemberInfoTyped("a", &TPixel::a)
+		}
+	};
+
+	return &typeInfo;
+}
+
 TypeInfo* UI::Dimensions::GetStaticTypeInfo()
 {
 	static TypeInfoStruct<UI::Dimensions> typeInfo {
@@ -255,6 +275,29 @@ TypeInfo* UI::Size::GetStaticTypeInfo()
 	return &typeInfo;
 }
 
+TypeInfo* UI::Node::GetStaticTypeInfo()
+{
+	static TypeInfoStruct<UI::Node> typeInfo {
+		"UI::Node",
+		nullptr,
+		std::vector<MemberInfo<UI::Node>*> {
+			MakeMemberInfoTyped("background", &UI::Node::backgroundColor),
+			MakeMemberInfoTyped("image", &UI::Node::image),
+			MakeMemberInfoTyped("text", &UI::Node::text),
+			MakeMemberInfoTyped("input", &UI::Node::inputHandler),
+			MakeMemberInfoTyped("top", &UI::Node::top),
+			MakeMemberInfoTyped("left", &UI::Node::left),
+			MakeMemberInfoTyped("right", &UI::Node::right),
+			MakeMemberInfoTyped("bottom", &UI::Node::bottom),
+			MakeMemberInfoTyped("height", &UI::Node::height),
+			MakeMemberInfoTyped("width", &UI::Node::width),
+			MakeMemberInfoTyped("children", &UI::Node::children)
+		},
+		UI::Node::PostLoad
+	};
+	return &typeInfo;
+}
+
 bool UI::Node::PostLoad(Node& node)
 {
 	NodeSpec& spec = node.spec;
@@ -419,28 +462,6 @@ bool UI::Node::PostLoad(Node& node)
 		}
 	}
 	return true;
-}
-
-TypeInfo* UI::Node::GetStaticTypeInfo()
-{
-	static TypeInfoStruct<UI::Node> typeInfo {
-		"UI::Node",
-		nullptr,
-		std::vector<MemberInfo<UI::Node>*> {
-			MakeMemberInfoTyped("image", &UI::Node::image),
-			MakeMemberInfoTyped("text", &UI::Node::text),
-			MakeMemberInfoTyped("input", &UI::Node::inputHandler),
-			MakeMemberInfoTyped("top", &UI::Node::top),
-			MakeMemberInfoTyped("left", &UI::Node::left),
-			MakeMemberInfoTyped("right", &UI::Node::right),
-			MakeMemberInfoTyped("bottom", &UI::Node::bottom),
-			MakeMemberInfoTyped("height", &UI::Node::height),
-			MakeMemberInfoTyped("width", &UI::Node::width),
-			MakeMemberInfoTyped("children", &UI::Node::children)
-		},
-		UI::Node::PostLoad
-	};
-	return &typeInfo;
 }
 
 // rmf todo: should probably do this as member deserialization not type deserialization

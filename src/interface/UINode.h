@@ -69,6 +69,7 @@ inline bool operator&(NodeSpec a, NodeSpec b)
 struct Node
 {
 	Input::Handler inputHandler;
+	TPixel backgroundColor = { 0, 0, 255, 20 };
 	Image image;
 	Text text;
 	Scalar top, left, right, bottom;
