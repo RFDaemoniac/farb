@@ -58,7 +58,7 @@ public:
 		: value(other.value)
 	{ }
 
-	const T& GetValue() { return value; }
+	const T& GetValue() const { return value; }
 
 protected:
 	ValueCheckedType(const T& value)

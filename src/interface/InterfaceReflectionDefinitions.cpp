@@ -194,6 +194,15 @@ struct ScalarAssign
 		object.units = UI::Units::Pixels;
 		return true;
 	}
+
+	static std::string ToString(const UI::Scalar& object)
+	{
+		if (object.units != UI::Units::Pixels)
+		{
+			return std::to_string(object.amount) + " " + Reflection::ToString(object.units);
+		}
+		return std::to_string(object.amount);
+	}
 };
 
 TypeInfo* UI::Scalar::GetStaticTypeInfo()
@@ -201,6 +210,7 @@ TypeInfo* UI::Scalar::GetStaticTypeInfo()
 
 	static auto typeInfo = TypeInfoCustomLeaf<UI::Scalar>::Construct(
 		"UI::Scalar",
+		ScalarAssign::ToString,
 		ScalarAssign::Parse,
 		ScalarAssign::Numeric<uint>,
 		ScalarAssign::Numeric<int>,
@@ -263,12 +273,25 @@ struct UISizeAssign
 		object.scalar.units = UI::Units::Pixels;
 		return true;
 	}
+
+	static std::string ToString(const UI::Size& object)
+	{
+		if (object.type == UI::SizeType::Scalar)
+		{
+			return Reflection::ToString(object.scalar);
+		}
+		else
+		{
+			return Reflection::ToString(object.type);
+		}
+	}
 };
 
 TypeInfo* UI::Size::GetStaticTypeInfo()
 {
 	static auto typeInfo = TypeInfoCustomLeaf<UI::Size>::Construct(
 		"UI::Size",
+		UISizeAssign::ToString,
 		UISizeAssign::Parse,
 		UISizeAssign::Numeric<uint>,
 		UISizeAssign::Numeric<int>,
@@ -388,7 +411,7 @@ bool UI::Node::PostLoad(Node& node)
 	{
 		TryAdd(DimensionAttribute::Height);
 	}
-	if (!node.image.filePath.empty())
+	if (node.image.Defined())
 	{
 		if (spec & NodeSpec::Width && node.width.type == SizeType::FitContents)
 		{
@@ -399,15 +422,7 @@ bool UI::Node::PostLoad(Node& node)
 			TryAdd(DimensionAttribute::Height);
 		}
 	}
-
-	if (!usedAttributes.count(DimensionAttribute::Width)
-		&& !usedAttributes.count(DimensionAttribute::Height))
-	{
-		Error("Could not parse dependencies for at least one of Width or Height").Log();
-		return false;
-	}
-
-	if (!node.text.unparsedText.empty())
+	if (node.text.Defined())
 	{
 		if (spec & NodeSpec::Width && node.width.type == SizeType::FitContents)
 		{
@@ -417,6 +432,13 @@ bool UI::Node::PostLoad(Node& node)
 		{
 			TryAdd(DimensionAttribute::Height);
 		}
+	}
+
+	if (!usedAttributes.count(DimensionAttribute::Width)
+		&& !usedAttributes.count(DimensionAttribute::Height))
+	{
+		Error("Could not parse dependencies for at least one of Width or Height").Log();
+		return false;
 	}
 
 	TryAdd(DimensionAttribute::Children);
@@ -484,6 +506,7 @@ TypeInfo* Reflection::GetTypeInfo<Input::Handler::Result(*)(Input::Event)>()
 
 	static auto typeInfo = TypeInfoCustomLeaf<Input::Handler::Result(*)(Input::Event)>::Construct(
 		"Input::Handler response",
+		nullptr,
 		Assign::FunctionPointerFromString
 	);
 	return &typeInfo;

@@ -14,6 +14,7 @@ TypeInfo* GetTypeInfo<bool>()
 {
 	static auto boolTypeInfo = TypeInfoCustomLeaf<bool>::Construct(
 		"bool",
+		nullptr,
 		static_cast<bool (*)(bool&, bool)>([](bool& object, bool value)
 		{
 			object = value;
@@ -56,6 +57,7 @@ TypeInfo* GetTypeInfo<char>()
 {
 	static auto charTypeInfo = TypeInfoCustomLeaf<char>::Construct(
 		"char",
+		nullptr,
 		HString("uint"), static_cast<bool (*)(char&, uint)>([](char& object, uint value)
 		{
 			object = static_cast<char>(value);
@@ -76,6 +78,7 @@ TypeInfo* GetTypeInfo<unsigned char>()
 {
 	static auto ucharTypeInfo = TypeInfoCustomLeaf<unsigned char>::Construct(
 		"char",
+		nullptr,
 		HString("uint"), static_cast<bool (*)(unsigned char&, uint)>([](unsigned char& object, uint value)
 		{
 			object = static_cast<unsigned char>(value);
@@ -97,6 +100,7 @@ TypeInfo* GetTypeInfo<uint>()
 {
 	static auto uintTypeInfo = TypeInfoCustomLeaf<uint>::Construct(
 		"uint",
+		nullptr,
 		static_cast<bool (*)(uint&, uint)>([](uint& object, uint value)
 		{
 			object = value;
@@ -117,6 +121,7 @@ TypeInfo* GetTypeInfo<int>()
 {
 	static auto intTypeInfo = TypeInfoCustomLeaf<int>::Construct(
 		"int",
+		nullptr,
 		static_cast<bool (*)(int&, uint)>([](int& object, uint value)
 		{
 			if (value > INT_MAX) { return false; }
@@ -137,6 +142,7 @@ TypeInfo* GetTypeInfo<float>()
 {
 	static auto floatTypeInfo = TypeInfoCustomLeaf<float>::Construct(
 		"float",
+		nullptr,
 		static_cast<bool (*)(float&, uint)>([](float& object, uint value)
 		{
 			object = static_cast<float>(value);
@@ -162,6 +168,7 @@ TypeInfo* GetTypeInfo<std::string>()
 {
 	static auto stringTypeInfo = TypeInfoCustomLeaf<std::string>::Construct(
 		"std::string",
+		nullptr,
 		static_cast<bool (*)(std::string&, std::string)>([](std::string& object, std::string value)
 		{
 			object = value;

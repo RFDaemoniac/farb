@@ -5,14 +5,14 @@
 		"type": "MouseClick",
 		"response" : "ClickButton"
 	},
-	"top": 10,
-	"left": "10 %",
+	"top": 20,
+	"left": 20,
 	"height": "FitContents",
 	"width": "FitContents",
 	"children":
 	[
 		{
-			"width": "100 %",
+			"width": "FitContents",
 			"height": "FitContents",
 			"text": { "contents": "PushMe", "size": 18, "color": [255, 255, 255, 255] }
 

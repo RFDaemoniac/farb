@@ -51,10 +51,16 @@ struct TemplatedTypeInfo<NamedType<T, Tag>>
 		return pTypeInfo->Assign(reflect.location, value);
 	}
 
+	static std::string ToString(const NamedType<T, Tag>& object)
+	{
+		return Reflection::ToString(object.value);
+	}
+
 	static TypeInfo* Get()
 	{
 		static auto namedTypeInfo = TypeInfoCustomLeaf<NamedType<T, Tag> >::Construct(
 			Tag::GetName(),
+			ToString,
 			Assign<bool>,
 			Assign<uint>,
 			Assign<int>,
@@ -92,10 +98,16 @@ struct TemplatedTypeInfo<ValueCheckedType<T, Tag> >
 		return true;
 	}
 
+	static std::string ToString(const ValueCheckedType<T, Tag>& object)
+	{
+		return Reflection::ToString(object.GetValue());
+	}
+
 	static TypeInfo* Get()
 	{
 		static auto namedTypeInfo = TypeInfoCustomLeaf<ValueCheckedType<T, Tag> >::Construct(
 			Tag::GetName(),
+			ToString,
 			Assign<bool>,
 			Assign<uint>,
 			Assign<int>,

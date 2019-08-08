@@ -10,7 +10,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "src/core/Error.hpp"
-            timestampString = "586467823.440969"
+            timestampString = "586927326.70884"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "19"
@@ -58,7 +58,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "src/interface/Window.cpp"
-            timestampString = "586924951.6936589"
+            timestampString = "586925546.1882091"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "264"
@@ -74,7 +74,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "src/interface/Window.cpp"
-            timestampString = "586924951.694059"
+            timestampString = "586925546.18828"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "381"
@@ -113,6 +113,115 @@
             endingLineNumber = "759"
             landmarkName = "ObjectEnd(byte* obj)"
             landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/reflection/ReflectionDeclare.h"
+            timestampString = "586927326.70893"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "197"
+            endingLineNumber = "197"
+            landmarkName = "ToString(const T&amp; obj)"
+            landmarkType = "9">
+            <Locations>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; Farb::Reflection::ToString&lt;int&gt;(int const&amp;)"
+                  moduleName = "runtests"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/robin/Documents/Repositories/farb/src/reflection/ReflectionDeclare.h"
+                  timestampString = "586926060.539299"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "197"
+                  endingLineNumber = "197"
+                  offsetFromSymbolStart = "50">
+               </Location>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; Farb::Reflection::ToString&lt;Farb::UI::Node&gt;(Farb::UI::Node const&amp;)"
+                  moduleName = "runtests"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/robin/Documents/Repositories/farb/src/reflection/ReflectionDeclare.h"
+                  timestampString = "586926060.542083"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "197"
+                  endingLineNumber = "197"
+                  offsetFromSymbolStart = "50">
+               </Location>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; Farb::Reflection::ToString&lt;Farb::Tree&lt;Farb::UI::Dimensions&gt; &gt;(Farb::Tree&lt;Farb::UI::Dimensions&gt; const&amp;)"
+                  moduleName = "runtests"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/robin/Documents/Repositories/farb/src/reflection/ReflectionDeclare.h"
+                  timestampString = "586926060.54392"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "197"
+                  endingLineNumber = "197"
+                  offsetFromSymbolStart = "59">
+               </Location>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; Farb::Reflection::ToString&lt;bool&gt;(bool const&amp;)"
+                  moduleName = "runtests"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/robin/Documents/Repositories/farb/src/reflection/ReflectionDeclare.h"
+                  timestampString = "586926060.545409"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "197"
+                  endingLineNumber = "197"
+                  offsetFromSymbolStart = "59">
+               </Location>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; Farb::Reflection::ToString&lt;unsigned int&gt;(unsigned int const&amp;)"
+                  moduleName = "runtests"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/robin/Documents/Repositories/farb/src/reflection/ReflectionDeclare.h"
+                  timestampString = "586926060.546854"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "197"
+                  endingLineNumber = "197"
+                  offsetFromSymbolStart = "59">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/core/ErrorOr.hpp"
+            timestampString = "586925978.033008"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "114"
+            endingLineNumber = "114"
+            landmarkName = "unknown"
+            landmarkType = "0">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

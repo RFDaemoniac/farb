@@ -95,12 +95,15 @@ struct TypeInfoCustomLeaf : public TypeInfo
 protected:
 	std::unordered_map<std::string, std::shared_ptr<AssignFunction <T> > > tpAssignFunctions;
 
+	std::string (*pToString)(const T&);
+
 public:
 	template <typename ... TArgs>
-	static TypeInfoCustomLeaf Construct(HString name, TArgs ... args)
+	static TypeInfoCustomLeaf Construct(HString name, std::string (*pToString)(const T&),TArgs ... args)
 	{
 		auto leafTypeInfo = TypeInfoCustomLeaf(name);
 		leafTypeInfo.RegisterAssignFunctions(args...);
+		leafTypeInfo.pToString = pToString;
 		return leafTypeInfo;
 	}
 
@@ -144,6 +147,10 @@ public:
 		else if constexpr(std::is_same<std::string, T>::value)
 		{
 			return ErrorOr<std::string>(*t);
+		}
+		else if (pToString != nullptr)
+		{
+			return pToString(*t);
 		}
 		else
 		{

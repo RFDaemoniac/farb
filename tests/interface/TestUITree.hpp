@@ -50,6 +50,7 @@ public:
 		farb_print(success, "render empty Tree");
 
 		elapsedTime = 0.0f;
+        std::cout << ToString(root) << std::endl;
 		while (elapsedTime < windowDuration)
 		{
 			success = window.Render(root);

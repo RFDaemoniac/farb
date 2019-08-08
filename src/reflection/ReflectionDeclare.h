@@ -198,7 +198,7 @@ inline std::string ToString(const T& obj)
 	if (result.IsError())
 	{
 		// rmf todo: log error
-		return "Uknown value of type " + reflect.typeInfo->GetName();
+		return "Uknown value of type " + reflect.typeInfo->GetName() + " with error " + result.GetError().message;
 	}
 	return result.GetValue();
 }
