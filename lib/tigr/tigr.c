@@ -234,6 +234,33 @@ void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color)
 	} while(--h);
 }
 
+void tigrFillTint(Tigr *bmp, int x, int y, int w, int h, TPixel color)
+{
+	TPixel *td;
+	int dt, i;
+
+	if (x < 0) { w += x; x = 0; }
+	if (y < 0) { h += y; y = 0; }
+	if (x + w > bmp->w) { w = bmp->w - x; }
+	if (y + h > bmp->h) { h = bmp->h - y; }
+	if (w <= 0 || h <= 0)
+		return;
+
+	td = &bmp->pix[y*bmp->w + x];
+	dt = bmp->w;
+	int xa = EXPAND(color.a);
+	int a = xa * EXPAND(color.a);
+	do {
+		for (i=0;i<w;i++) {
+			td[i].r += (unsigned char)((color.r - td[i].r)*a >> 16);
+			td[i].g += (unsigned char)((color.g - td[i].g)*a >> 16);
+			td[i].b += (unsigned char)((color.b - td[i].b)*a >> 16);
+			td[i].a += (unsigned char)((color.a - td[i].a)*a >> 16);
+		}
+		td += dt;
+	} while(--h);
+}
+
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color)
 {
 	int sx, sy, dx, dy, err, e2;

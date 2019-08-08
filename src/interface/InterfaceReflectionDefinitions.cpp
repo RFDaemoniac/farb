@@ -228,8 +228,10 @@ TypeInfo* UI::Text::GetStaticTypeInfo()
 		std::vector<MemberInfo<UI::Text>*> {
 			MakeMemberInfoTyped("contents", &UI::Text::unparsedText),
 			MakeMemberInfoTyped("size", &UI::Text::size),
-			MakeMemberInfoTyped("font", &UI::Text::fontName)
-		}
+			MakeMemberInfoTyped("font", &UI::Text::fontName),
+			MakeMemberInfoTyped("color", &UI::Text::color)
+		},
+		UI::Text::PostLoad
 	};
 	return &typeInfo;
 }
@@ -461,6 +463,7 @@ bool UI::Node::PostLoad(Node& node)
 			}
 		}
 	}
+	
 	return true;
 }
 

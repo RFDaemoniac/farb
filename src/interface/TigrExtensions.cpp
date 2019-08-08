@@ -61,7 +61,8 @@ ErrorOr<Success> TigrBlitWrapped(
 	Tigr* destImage,
 	const Dimensions& destTotal,
 	Tigr* sourceImage,
-	const Dimensions& sourceDim)
+	const Dimensions& sourceDim,
+	bool useAlpha)
 {
 	if ((sourceDim.width == 0 || sourceDim.height == 0)
 		&& destTotal.width != 0
@@ -77,11 +78,23 @@ ErrorOr<Success> TigrBlitWrapped(
 	int yRemainder = destTotal.height % sourceDim.height;
 	auto blit = [&](int destX, int destY, int width, int height)
 	{
-		tigrBlit(
-			destImage, sourceImage,
-			destX, destY,
-			sourceDim.x, sourceDim.y,
-			width, height);
+		if (useAlpha)
+		{
+			tigrBlitAlpha(
+				destImage, sourceImage,
+				destX, destY,
+				sourceDim.x, sourceDim.y,
+				width, height,
+				1.0f);
+		}
+		else
+		{
+			tigrBlit(
+				destImage, sourceImage,
+				destX, destY,
+				sourceDim.x, sourceDim.y,
+				width, height);
+		}
 	};
 
 	for (int row = 0; row < yRepeat; ++row)
@@ -144,10 +157,20 @@ ErrorOr<Success> Image::Draw(
 		&& destDim.height == source.spriteLocation.height)
 	{
 		// simplest case is shortcuted, this might not be worth it if it's not common
-		tigrBlit(destImage, source.bitmap.get(),
-			destDim.x, destDim.y,
-			source.spriteLocation.x, source.spriteLocation.y,
-			source.spriteLocation.width, source.spriteLocation.height);
+		if (source.useAlpha)
+		{
+			tigrBlitAlpha(destImage, source.bitmap.get(),
+				destDim.x, destDim.y,
+				source.spriteLocation.x, source.spriteLocation.y,
+				source.spriteLocation.width, source.spriteLocation.height, 1.0f);
+		}
+		else
+		{
+			tigrBlit(destImage, source.bitmap.get(),
+				destDim.x, destDim.y,
+				source.spriteLocation.x, source.spriteLocation.y,
+				source.spriteLocation.width, source.spriteLocation.height);
+		}
 		return Success();
 	}
 	else if (source.nineSlice.size() == 9)
@@ -165,10 +188,20 @@ ErrorOr<Success> Image::Draw(
 			{
 				continue;
 			}
-			tigrBlit(destImage, source.bitmap.get(),
-				destSlicedDim.x, destSlicedDim.y,
-				source.nineSlice[location].x, source.nineSlice[location].y,
-				destSlicedDim.width, destSlicedDim.height);
+			if (source.useAlpha)
+			{
+				tigrBlitAlpha(destImage, source.bitmap.get(),
+					destSlicedDim.x, destSlicedDim.y,
+					source.nineSlice[location].x, source.nineSlice[location].y,
+					destSlicedDim.width, destSlicedDim.height, 1.0f);
+			}
+			else
+			{
+				tigrBlit(destImage, source.bitmap.get(),
+					destSlicedDim.x, destSlicedDim.y,
+					source.nineSlice[location].x, source.nineSlice[location].y,
+					destSlicedDim.width, destSlicedDim.height);
+			}
 		}
 		const NineSliceLocations::Enum cross[] {TC, ML, MC, MR, BC};
 		for (auto location : cross)
@@ -179,27 +212,36 @@ ErrorOr<Success> Image::Draw(
 				continue;
 			}
 			CHECK_RETURN(TigrBlitWrapped(destImage, destSlicedDim,
-				source.bitmap.get(), source.nineSlice[location]));
+				source.bitmap.get(), source.nineSlice[location], source.useAlpha));
 		}
 		return Success();
 	}
 	else if (source.enableTiling)
 	{
 		// wrapped will handle repeated images
-		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, source.bitmap.get(), source.spriteLocation));
+		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, source.bitmap.get(), source.spriteLocation, source.useAlpha));
 		return Success();
 	}
 	else if (destDim.width <= source.spriteLocation.width
 		&& destDim.height <= source.spriteLocation.height)
 	{
 		// wrapped will handle truncated images
-		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, source.bitmap.get(), source.spriteLocation));
+		CHECK_RETURN(TigrBlitWrapped(destImage, destDim, source.bitmap.get(), source.spriteLocation, source.useAlpha));
 		return Success();
 	}
 	
 	// rmf note: probably won't do scaled images,
 	// we could just render the image here at normal scale?
 	return Error("Scaled images (without 9 slicing, or tiling) not implemented");
+}
+
+bool Text::PostLoad(Text& text)
+{
+	// todo: find a better place for text parsing
+	// so it can receive updates
+	auto result = text.UpdateParsedText();
+	if (result.IsError()) return false;
+	return true;
 }
 
 ErrorOr<Success> Text::UpdateParsedText()
@@ -214,7 +256,7 @@ struct DrawGlyphFunctor
 	Tigr* destImage;
 	const Dimensions& destDim;
 	TigrFont* font;
-	TPixel color;
+	TPixel color = {0, 0, 0, 255};
 
 	DrawGlyphFunctor(
 		Tigr* destImage,

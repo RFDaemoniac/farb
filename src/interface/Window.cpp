@@ -335,6 +335,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 		computedAttributes.insert(attribute);
 	}
 
+	/* rmf todo: do I really care about this? probably eventually
 	if ((parent.height > 0 && dimensions.height + dimensions.y > parent.height)
 		|| (parent.width > 0 && dimensions.width + dimensions.x > parent.width)
 		|| dimensions.x < 0
@@ -346,6 +347,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 		// there are several exceptions to this rule...
 		return Error("Child breaks bounds of parent");
 	}
+	*/
 	
 	return dimensionsTree;
 }
@@ -363,7 +365,8 @@ ErrorOr<Success> Window::Render(
 
 	if (node.backgroundColor.a > 0)
 	{
-		tigrFill(
+		auto fill = (node.backgroundColor.a < 255) ? tigrFillTint : tigrFill;
+		fill(
 			window.get(),
 			destination.x,
 			destination.y,

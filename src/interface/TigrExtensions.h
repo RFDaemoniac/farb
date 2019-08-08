@@ -104,6 +104,8 @@ struct Image
 
 	bool enableTiling;
 
+	bool useAlpha = true;
+
 	Image()
 		: filePath()
 		, bitmap()
@@ -195,6 +197,8 @@ struct Text
 		const Dimensions& destDim) const;
 
 	static Reflection::TypeInfo* GetStaticTypeInfo();
+
+	static bool PostLoad(Text& text);
 
 private:
 	// shared behavior between GetBoundsRequired and Draw
