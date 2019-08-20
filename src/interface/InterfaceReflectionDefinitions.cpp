@@ -195,7 +195,7 @@ struct ScalarAssign
 		return true;
 	}
 
-	static std::string ToString(const UI::Scalar& object)
+	static std::string ToString(const UI::Scalar& object, std::string indentation = "")
 	{
 		if (object.units != UI::Units::Pixels)
 		{
@@ -274,15 +274,15 @@ struct UISizeAssign
 		return true;
 	}
 
-	static std::string ToString(const UI::Size& object)
+	static std::string ToString(const UI::Size& object, std::string indentation = "")
 	{
 		if (object.type == UI::SizeType::Scalar)
 		{
-			return Reflection::ToString(object.scalar);
+			return Reflection::ToString(object.scalar, indentation);
 		}
 		else
 		{
-			return Reflection::ToString(object.type);
+			return Reflection::ToString(object.type, indentation);
 		}
 	}
 };

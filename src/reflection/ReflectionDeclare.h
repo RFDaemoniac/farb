@@ -61,7 +61,7 @@ struct ReflectionObject
 	bool PushBackDefault() const;
 	bool ArrayEnd() const;
 
-	ErrorOr<std::string> ToString() const;
+	ErrorOr<std::string> ToString(std::string indentation = "") const;
 };
 
 struct TypeInfo
@@ -104,7 +104,7 @@ public:
 	virtual bool PushBackDefault(byte* obj) const { return false; }
 	virtual bool ArrayEnd(byte* obj) const { return false; }
 
-	virtual ErrorOr<std::string> ToString(byte* obj) const
+	virtual ErrorOr<std::string> ToString(byte* obj, std::string indentation = "") const
 	{
 		return Error(name + " ToString not implemented");
 	}
@@ -189,12 +189,12 @@ inline ReflectionObject Reflect(T& object)
 }
 
 template<typename T>
-inline std::string ToString(const T& obj)
+inline std::string ToString(const T& obj, std::string indentation = "")
 {
 	// casting away const should be fine here because
 	// ToString and GetName both do not modify the underlying value
 	auto reflect = Reflect(const_cast<T&>(obj));
-	auto result = reflect.ToString();
+	auto result = reflect.ToString(indentation);
 	if (result.IsError())
 	{
 		// rmf todo: log error
@@ -258,9 +258,9 @@ inline bool ReflectionObject::ArrayEnd() const
 	return typeInfo->ArrayEnd(location);
 }
 
-inline ErrorOr<std::string> ReflectionObject::ToString() const
+inline ErrorOr<std::string> ReflectionObject::ToString(std::string indentation /* = "" */) const
 {
-	return typeInfo->ToString(location);
+	return typeInfo->ToString(location, indentation);
 }
 
 } // namespace Reflection

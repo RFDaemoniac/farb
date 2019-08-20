@@ -95,11 +95,11 @@ struct TypeInfoCustomLeaf : public TypeInfo
 protected:
 	std::unordered_map<std::string, std::shared_ptr<AssignFunction <T> > > tpAssignFunctions;
 
-	std::string (*pToString)(const T&);
+	std::string (*pToString)(const T&, std::string);
 
 public:
 	template <typename ... TArgs>
-	static TypeInfoCustomLeaf Construct(HString name, std::string (*pToString)(const T&),TArgs ... args)
+	static TypeInfoCustomLeaf Construct(HString name, std::string (*pToString)(const T&, std::string),TArgs ... args)
 	{
 		auto leafTypeInfo = TypeInfoCustomLeaf(name);
 		leafTypeInfo.RegisterAssignFunctions(args...);
@@ -132,13 +132,13 @@ public:
 		return Assign(obj, value);
 	}
 
-	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	virtual ErrorOr<std::string> ToString(byte* obj, std::string indentation = "") const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		if constexpr(std::is_same<bool, T>::value)
 		{
 			bool b = static_cast<bool>(t);
-			return b ? std::string("true") : std::string("false");
+			return (b ? std::string("true") : std::string("false"));
 		}
 		else if constexpr(std::is_integral<T>::value || std::is_floating_point<T>::value)
 		{
@@ -146,11 +146,11 @@ public:
 		}
 		else if constexpr(std::is_same<std::string, T>::value)
 		{
-			return ErrorOr<std::string>(*t);
+			return *t;
 		}
 		else if (pToString != nullptr)
 		{
-			return pToString(*t);
+			return pToString(*t, indentation);
 		}
 		else
 		{
@@ -314,14 +314,14 @@ public:
 		return false;
 	}
 
-	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	virtual ErrorOr<std::string> ToString(byte* obj, std::string indentation = "") const override
 	{
 		T* t = reinterpret_cast<T*>(obj);
 		for (const auto & pair : vValues)
 		{
 			if (static_cast<T>(pair.second) == *t)
 			{
-				return ErrorOr<std::string>(pair.first);
+				return pair.first;
 			}
 		}
 		return std::to_string(static_cast<int>(*t));
@@ -427,24 +427,36 @@ public:
 	// this is not the same as a serialization function
 	// though it's pretty close, so maybe that should be an option, too
 	// should only return error if ToString<TVal> returns an error
-	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	virtual ErrorOr<std::string> ToString(byte* obj, std::string indentation = "") const override
 	{
 		std::string ret;
-		T* t = reinterpret_cast<T*>(obj);
 		std::string line = "[ ";
 		line.reserve(SerializationLineLengthTarget * 2);
+		T* t = reinterpret_cast<T*>(obj);
+		indentation += "\t";
 		for (int index = 0; pBoundsCheck(*t, index); ++index)
 		{
 			TVal & value = pAt(*t, index);
-			line += CHECK_RETURN(Reflect(value).ToString()) + ", ";
+			line += CHECK_RETURN(Reflect(value).ToString(indentation)) + ", ";
 			if (line.size() > SerializationLineLengthTarget)
 			{
-				ret += line + "\n\t";
+				ret += line + "\n" + indentation;
 				line = "";
 			}
 		}
-		line += line.size() == 0 || strncmp(&line.back(), " ", 1) == 0
-			? "]" : " ]";
+		indentation.pop_back();
+		if (line.size() == 0)
+		{
+			line += "\n" + indentation + "]";
+		}
+		else if (strncmp(&line.back(), " ", 1) == 0)
+		{
+			line += "]";
+		}
+		else
+		{
+			line += " ]";
+		}
 		ret += line;
 		return ret;
 	}
@@ -614,7 +626,7 @@ protected:
 		return PassThrough(&TypeInfo::ArrayEnd, obj);
 	}
 
-	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	virtual ErrorOr<std::string> ToString(byte* obj, std::string indentation = "") const override
 	{
 		TypeInfo* defaultTypeInfo = GetTypeInfo<T>();
 		if (defaultTypeInfo == this)
@@ -622,7 +634,7 @@ protected:
 			// rmf todo: convert back for ToString? Always?
 			return Error("ToString not implemented for TypeInfoAs");
 		}
-		return defaultTypeInfo->ToString(obj);
+		return defaultTypeInfo->ToString(obj, indentation);
 	}
 };
 
@@ -644,6 +656,8 @@ public:
 	virtual ~MemberInfo() { }
 
 	virtual ReflectionObject Get(T* t) const = 0;
+
+	virtual bool ShouldSkipSerialization(const T* t) const = 0;
 };
 
 template<typename T, typename TMem>
@@ -651,6 +665,9 @@ struct MemberInfoTyped : public MemberInfo<T>
 {
 protected:
 	TMem T::* location;
+
+	bool (*pShouldSkipSerialization)(const TMem&);
+
 	// typeInfoOverride rather than typeInfo because initializing
 	// typeInfo at construction resulted in circular dependencies for
 	// types that contain members dependent on their type
@@ -658,9 +675,14 @@ protected:
 	TypeInfo* typeInfoOverride;
 
 public:
-	MemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfoOverride = nullptr)
+	MemberInfoTyped(
+		HString name,
+		TMem T::* location,
+		bool (*pShouldSkipSerialization)(const TMem&),
+		TypeInfo* typeInfoOverride = nullptr)
 		: MemberInfo<T>(name)
 		, location(location)
+		, pShouldSkipSerialization(pShouldSkipSerialization)
 		, typeInfoOverride(typeInfoOverride)
 	{ }
 
@@ -669,6 +691,12 @@ public:
 		return ReflectionObject(
 			reinterpret_cast<byte*>(&(t->*location)),
 			typeInfoOverride != nullptr ? typeInfoOverride : GetTypeInfo<TMem>());
+	}
+
+	virtual bool ShouldSkipSerialization(const T* t) const override
+	{
+		if (pShouldSkipSerialization == nullptr) return false;
+		return pShouldSkipSerialization(t->*location);
 	}
 };
 
@@ -768,28 +796,30 @@ struct TypeInfoStruct : public TypeInfo
 		return pPostLoad(*t);
 	}
 
-	virtual ErrorOr<std::string> ToString(byte* obj) const override
+	virtual ErrorOr<std::string> ToString(byte* obj, std::string indentation = "") const override
 	{
-		std::string ret;
+		std::string ret = "\n" + indentation + "{";
 		T* t = reinterpret_cast<T*>(obj);
-		std::string line = "{ ";
-		line.reserve(SerializationLineLengthTarget * 2);
-
+		indentation += "\t";
 		for (auto member : vMembers)
 		{
-			line += member->name + ": ";
-			line += CHECK_RETURN(member->Get(t).ToString());
-			line += ", ";
-			if (line.size() > SerializationLineLengthTarget)
-			{
-				ret += line + "\n\t";
-				line = "";
-			}
+			// each member is always on a new line
+			ret += "\n"
+				+ indentation
+				+ member->name
+				+ ": "
+				+ CHECK_RETURN(member->Get(t).ToString(indentation))
+				+ ",";
 		}
-
-		line += line.size() == 0 || strncmp(&line.back(), " ", 1) == 0
-			? "}" : " }";
-		ret += line;
+		indentation.pop_back();
+		if (vMembers.size() == 0)
+		{
+			ret += " }";
+		}
+		else
+		{
+			ret += "\n" + indentation + "}";
+		}
 		return ret;
 	}
 };

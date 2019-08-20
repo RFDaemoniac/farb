@@ -51,9 +51,9 @@ struct TemplatedTypeInfo<NamedType<T, Tag>>
 		return pTypeInfo->Assign(reflect.location, value);
 	}
 
-	static std::string ToString(const NamedType<T, Tag>& object)
+	static std::string ToString(const NamedType<T, Tag>& object, std::string indentation)
 	{
-		return Reflection::ToString(object.value);
+		return Reflection::ToString(object.value, indentation);
 	}
 
 	static TypeInfo* Get()
@@ -98,9 +98,9 @@ struct TemplatedTypeInfo<ValueCheckedType<T, Tag> >
 		return true;
 	}
 
-	static std::string ToString(const ValueCheckedType<T, Tag>& object)
+	static std::string ToString(const ValueCheckedType<T, Tag>& object, std::string indentation)
 	{
-		return Reflection::ToString(object.GetValue());
+		return Reflection::ToString(object.GetValue(), indentation);
 	}
 
 	static TypeInfo* Get()
