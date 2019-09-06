@@ -678,7 +678,7 @@ public:
 	MemberInfoTyped(
 		HString name,
 		TMem T::* location,
-		bool (*pShouldSkipSerialization)(const TMem&),
+		bool (*pShouldSkipSerialization)(const TMem&) = nullptr,
 		TypeInfo* typeInfoOverride = nullptr)
 		: MemberInfo<T>(name)
 		, location(location)
@@ -701,10 +701,32 @@ public:
 };
 
 template<typename T, typename TMem>
-MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(HString name, TMem T::* location, TypeInfo* typeInfoOverride = nullptr)
+MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(
+	HString name,
+	TMem T::* location,
+	bool (*pShouldSkipSerialization)(const TMem&) = nullptr,
+	TypeInfo* typeInfoOverride = nullptr)
 {
-	return new MemberInfoTyped<T, TMem>(name, location, typeInfoOverride);
+	return new MemberInfoTyped<T, TMem>(
+		name,
+		location,
+		pShouldSkipSerialization,
+		typeInfoOverride);
 }
+
+template<typename T, typename TMem>
+MemberInfoTyped<T, TMem>* MakeMemberInfoTyped(
+	HString name,
+	TMem T::* location,
+	TypeInfo* typeInfoOverride)
+{
+	return new MemberInfoTyped<T, TMem>(
+		name,
+		location,
+		nullptr,
+		typeInfoOverride);
+}
+
 
 template<typename T>
 struct TypeInfoStruct : public TypeInfo
