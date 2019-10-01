@@ -85,7 +85,7 @@ public:
 			{1, ExampleBaseStruct(ExampleEnum::Two, 2)});
 
 		ExampleBaseStruct testStructFromFile;
-		bool success = DeserializeFile("./tests/files/TestExampleBaseStruct.json", Reflect(testStructFromFile));
+		bool success = DeserializeFile("./tests/files/input/TestExampleBaseStruct.json", Reflect(testStructFromFile));
 		success = success && testStructFromFile == ExampleBaseStruct(ExampleEnum::One, 1);
 		farb_print(success, "deserialize from file value " + GetTypeInfo<ExampleBaseStruct>()->GetName());
 		assert(success);

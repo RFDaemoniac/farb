@@ -30,7 +30,7 @@ public:
 
 		Node root;
 		auto rootReflect = Reflect(root);
-		bool success = DeserializeFile("./tests/files/TestUITree.json", rootReflect);
+		bool success = DeserializeFile("./tests/files/input/TestUITree.json", rootReflect);
 		farb_print(success, "deserialize UI Tree");
 		assert(success);
 

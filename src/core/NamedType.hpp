@@ -7,6 +7,12 @@
 namespace Farb
 {
 
+#define NAMED_TYPE_TAG(NAME) struct NAME ## Tag { static HString GetName() { return #NAME; } }
+
+#define NAMED_TYPE_USING(TYPE, NAME) using NAME = NamedType<TYPE, NAME ## Tag>
+
+#define NAMED_TYPE(TYPE, NAME) NAMED_TYPE_TAG(NAME); NAMED_TYPE_USING(TYPE, NAME);
+
 /*
 struct NamedTypeTag
 {
@@ -42,6 +48,21 @@ struct NamedType
 	bool operator ==(const NamedType& other) const
 	{
 		return value == other.value;
+	}
+
+	bool operator !=(const NamedType& other) const
+	{
+		return value != other.value;
+	}
+
+	bool operator <(const NamedType& other) const
+	{
+		return value < other.value;
+	}
+
+	bool operator >(const NamedType& other) const
+	{
+		return value > other.value;
 	}
 };
 

@@ -71,6 +71,16 @@ public:
 	virtual bool RunTests() const = 0;
 };
 
+template<typename ... TTests>
+bool Run()
+{
+    // ... copies the previous statement for each of TTests
+    // comma operator combines them in
+    bool success = true;
+    ((success &= TTests().RunTests()),...);
+    return success;
+}
+
 } // namespace Tests
 
 } // namespace Farb

@@ -17,6 +17,12 @@ using byte = unsigned char;
 template<typename T>
 using value_ptr = valuable::value_ptr<T>;
 
+template<typename T>
+using CRef = std::reference_wrapper<const T>;
+
+template<typename T>
+using Ref = std::reference_wrapper<T>;
+
 } // namespace Farb
 
 #endif // FARB_BUILTIN_TYPEDEFS_H

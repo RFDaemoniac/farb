@@ -10,12 +10,7 @@ namespace Farb
 namespace UI
 {
 
-struct FontNameTag
-{
-	static HString GetName() { return "FontName"; }
-};
-
-using FontName = NamedType<std::string, FontNameTag>;
+NAMED_TYPE(std::string, FontName);
 
 } // namespace UI
 

@@ -97,6 +97,10 @@ public:
   pointer release() {
     return ptr().release();
   }
+  
+  void reset() {
+    ptr().reset();
+  }
 
   T *get() noexcept { return ptr().get(); }
   T const *get() const noexcept { return ptr().get(); }

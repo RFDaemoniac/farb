@@ -13,16 +13,6 @@ g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 
 using namespace Farb::Tests;
 
-template<typename TTest, typename ... TTests>
-bool Run()
-{
-    // ... copies the previous statement for each of TTests
-    // comma operator combines them in
-    bool success = true;
-    ((success &= TTests().RunTests()),...);
-    return success;
-}
-
 int main(void)
 {
 	std::cout << "Beginning Tests" << std::endl;
