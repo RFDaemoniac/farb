@@ -10,7 +10,10 @@ namespace Farb
 namespace UI
 {
 
-NAMED_TYPE(std::string, FontName);
+NAMED_TYPE_TAG(FontName);
+using FontName = NamedType<std::string, FontNameTag>;
+
+//NAMED_TYPE(std::string, FontName);
 
 } // namespace UI
 

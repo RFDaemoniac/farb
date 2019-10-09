@@ -41,6 +41,12 @@ struct NamedType
 		: value(value)
 	{ }
 
+	// ugly sfinae to allow implicit construction from string literals
+	template<typename U = T>
+	NamedType(const char* value, typename std::enable_if<std::is_same<U, std::string>::value >::type* = nullptr)
+		: value(value)
+	{ }
+
 	NamedType(const NamedType& other)
 		: value(other.value)
 	{ }

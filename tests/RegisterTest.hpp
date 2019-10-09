@@ -68,16 +68,26 @@ static inline bool farb_print (bool success, std::string sTrue, std::string sFal
 class ITest
 {
 public:
+	bool RunOrSkip(bool interactive)
+	{
+		if (!interactive && IsInteractive())
+		{
+			return true;
+		}
+		return RunTests();
+	}
 	virtual bool RunTests() const = 0;
+
+	virtual bool IsInteractive() const { return false; }
 };
 
 template<typename ... TTests>
-bool Run()
+bool Run(bool interactive = false)
 {
     // ... copies the previous statement for each of TTests
     // comma operator combines them in
     bool success = true;
-    ((success &= TTests().RunTests()),...);
+    ((success &= TTests().RunOrSkip(interactive)),...);
     return success;
 }
 
