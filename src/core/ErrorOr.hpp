@@ -2,6 +2,7 @@
 #define FARB_ERROR_OR_HPP
 
 #include <memory>
+#include <type_traits>
 
 #include "Error.hpp"
 
@@ -117,5 +118,34 @@ public:
 	})
 
 } // namespace Farb
+
+// SFINAE type inspection
+template<typename TVal>
+struct IsErrorOr : std::false_type { };
+
+template<typename TVal>
+struct IsErrorOr<ErrorOr<TVal> > : std::true_type { };
+
+template<typename T>
+struct UnwrapErrorOr
+{
+	using TVal = T;
+}
+
+template<typename T>
+struct UnwrapErrorOr<ErrorOr<T> >
+{
+	using TVal = T;
+}
+
+template<typename T>
+T ValueOrDefault(ErrorOr<T> result, T default)
+{
+	if (result.IsError())
+	{
+		return default;
+	}
+	return result.GetValue();
+}
 
 #endif // FARB_ERROR_OR_HPP
