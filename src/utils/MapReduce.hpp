@@ -1,7 +1,11 @@
 #ifndef FARB_MAP_REDUCE_HPP
 #define FARB_MAP_REDUCE_HPP
 
+#include <tuple>
+#include <utility>
+
 #include "ErrorOr.hpp"
+#include "TypeInspection.hpp"
 
 namespace Farb
 {
@@ -9,52 +13,103 @@ namespace Farb
 template<typename TRet, typename ...TArgs>
 struct Functor
 {
-	virtual TRet operator()(TArgs... args);
+	virtual ~Functor() { };
+
+	virtual TRet operator()(TArgs... args) = 0;
+
+	virtual Functor * Clone() const = 0;
 };
 
 template<typename ...TArgs>
 struct Functor<void, TArgs...>
 {
-	virtual void operator()(TArgs... args);
+	virtual void operator()(TArgs... args) = 0;
+
+	virtual Functor * Clone() const = 0;
+
+	virtual ~Functor() { };
 };
 
+// for use by value_ptr
+template <typename T>
+struct FunctorCloner {
+	FunctorCloner() = default;
+	T *operator()(T const &x) const { return x.Clone(); }
+};
+
+// Declaration first to support multiple parameter packs
+// this doesn't need to have inheritence information
+template<
+	typename TRet,
+	typename TypeListBefore,
+	typename TArg,
+	typename TypeListAfter>
+struct CurriedFunctor;
+
+// Specialization of template declaration with multiple parameter packs
 template<typename TRet, typename ...TBefore, typename TArg, typename ...TAfter>
-struct CurriedFunctor : public Functor<TRet, TBefore..., TAfter...>
+struct CurriedFunctor<
+	TRet,
+	TypeList<TBefore...>,
+	TArg,
+	TypeList<TAfter...> >
+: public Functor<TRet, TBefore..., TAfter...>
 {
-	value_ptr<Functor<TRet, TBefore..., TArg, TAfter...>> functor;
+	using TUncurriedFunctor = Functor<TRet, TBefore..., TArg, TAfter...>;
+
+	valuable::value_ptr<TUncurriedFunctor, FunctorCloner<TUncurriedFunctor> > functor;
 	TArg value;
 
-	CurriedFunctor(Functor<TRet, TBefore..., TArg, TAfter...> functor, TArg value)
+	CurriedFunctor(TUncurriedFunctor & functor, TArg value)
 		: functor(functor)
 		, value(value)
 	{ }
 
-	CurriedFunctor(CurriedFunctor&& other)
-		: functor(other.functor)
-		, value(other.value)
-	{ }
-
 	virtual TRet operator()(TBefore... before, TAfter... after) override
 	{
-		return functor(before..., value, after...);
+		return (*functor)(before..., value, after...);
+	}
+
+	virtual Functor<TRet, TBefore..., TAfter...> * Clone() const override
+	{
+		return new CurriedFunctor(*this);
 	}
 };
+/*
 
-template<
-	typename TRet,
-	typename ...TBefore,
-	typename TArg,
-	typename ...TAfter,
-	typename ...T2Args>
-struct ComposedFunctors : public Functor <TRet, TBefore..., T2Args..., TAfter...>
+template<typename TRet, typename TArgsList, typename TArg, typename T2ArgsList>
+struct ComposedFunctors;
+
+template<typename... Args>
+void f1(const std::tuple<Args...>& t1) {
+    std::tuple<typename std::conditional<
+        std::is_same<A, Args>::value, B, Args>::type...> t2(t1);
+
+template<typename T>
+using replace_fn = std::conditional_t<std::is_same_v<From, T>, To, T>
+
+template<typename TRet, typename... TArgs, typename TArg, typename... T2Args>
+struct ComposedFunctors<TRet, std::tuple<TArgs...>, TArg, std::tuple<T2Args...> >
+: Functor<TRet, typename std::conditional<
+		std::is_same<TArg, TArgs>::value, T2Args..., TArgs>::type...>
 {
-	value_ptr<Functor<TRet, TBefore..., UnwrapErrorOr<TArg>::TVal, TAfter...> > functor;
-	value_ptr<Functor<TArg, T2Args...> > functor_two;
+
+	using TFunctor = Functor<TRet, TArgs...>;
+	using TFunctorTwo = Functor<TArg, T2Args...>;
+
+	using TResultingFunctor = Functor<TRet, typename std::conditional<
+		std::is_same<TArg, TArgs>::value, T2Args..., TArgs>::type...>;
+
+	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
+	valuable::value_ptr<TFunctorTwo, FunctorCloner<TFunctorTwo> > functor_two;
+
+	static_assert((IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
+		|| !IsErrorOr<TArg>::value, "Composed functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
 
 	// by convention assume that functions don't use ErrorOr as parameters
-	ComposedFunctor(
-		Functor<TRet, TBefore..., UnwrapErrorOr<TArg>::TVal, TAfter...> functor,
-		Functor<TArg, T2Args...> functor_two)
+	ComposedFunctors(
+		TFunctor & functor,
+		TFunctorTwo & functor_two)
 		: functor(functor)
 		, functor_two(functor_two)
 	{ }
@@ -63,18 +118,106 @@ struct ComposedFunctors : public Functor <TRet, TBefore..., T2Args..., TAfter...
 	{
 		if constexpr (IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
 		{
-			auto value = CHECK_RETURN(functor_two(two_args));
-			return functor(before..., value, after...);
-		}
-		else if constexpr (IsErrorOr<TArg>::value)
-		{
-			static_assert(false, "Composed functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
+			auto value = CHECK_RETURN((*functor_two)(two_args...));
+			return (*functor)(before..., value, after...);
 		}
 		else
 		{
-			return functor(before..., functor_two(two_args), after...);
+			return (*functor)(before..., (*functor_two)(two_args...), after...);
 		}
 	}
+
+	virtual Functor<TRet, TBefore..., T2Args..., TAfter...> * Clone() const override
+	{
+		return new ComposedFunctors(*this);
+	}
+}
+
+
+template <class T, class... Args>
+struct remove_last<std::tuple<T, Args...>>
+{
+	using type = typename concat_tuple<
+		std::tuple<T>,
+		typename remove_last<std::tuple<Args...>>::type
+	>::type;
+};
+*/
+
+template<
+	typename TRet,
+	typename TypeListBefore,
+	typename TArg,
+	typename TypeListAfter,
+	typename TypeList2Args> 
+struct ComposedFunctors;
+
+template<
+	typename TRet,
+	typename ...TBefore,
+	typename TArg,
+	typename ...TAfter,
+	typename ...T2Args>
+struct ComposedFunctors<
+	TRet,
+	TypeList<TBefore...>,
+	TArg,
+	TypeList<TAfter...>,
+	TypeList<T2Args...> >
+: public Functor <TRet, TBefore..., T2Args..., TAfter...>
+{
+	using TFunctor = Functor<TRet, TBefore..., typename UnwrapErrorOr<TArg>::TVal, TAfter...>;
+	using TFunctorTwo = Functor<TArg, T2Args...>;
+
+	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
+	valuable::value_ptr<TFunctorTwo, FunctorCloner<TFunctorTwo> > functor_two;
+
+	static_assert((IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
+		|| !IsErrorOr<TArg>::value, "Composed functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
+
+	// by convention assume that functions don't use ErrorOr as parameters
+	ComposedFunctors(
+		TFunctor & functor,
+		TFunctorTwo & functor_two)
+		: functor(functor)
+		, functor_two(functor_two)
+	{ }
+
+	virtual TRet operator()(TBefore... before, T2Args... two_args, TAfter... after) override
+	{
+		if constexpr (IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
+		{
+			auto value = CHECK_RETURN((*functor_two)(two_args...));
+			return (*functor)(before..., value, after...);
+		}
+		else
+		{
+			return (*functor)(before..., (*functor_two)(two_args...), after...);
+		}
+	}
+
+	virtual Functor<TRet, TBefore..., T2Args..., TAfter...> * Clone() const override
+	{
+		return new ComposedFunctors(*this);
+	}
+};
+
+template<
+	typename TRet,
+	typename ...TArgs,
+	typename TArg,
+	typename ...T2Args>
+auto Compose(
+	Functor<TRet, TArgs...> & functor,
+	Functor<TArg, T2Args...> & functor_two)
+{
+	using Split = SplitTypeList<TArg, TArgs...>;
+	return ComposedFunctors<
+		TRet,
+		typename Split::Before,
+		TArg,
+		typename Split::After,
+		TypeList<T2Args...> >(functor, functor_two);
 }
 
 // rmf note: I think I want another composed type for a shared parameter
@@ -85,17 +228,36 @@ struct ComposedFunctors : public Functor <TRet, TBefore..., T2Args..., TAfter...
 template <
 	typename TRet,
 	typename TShared,
-	typename... T1Before,
+	typename TypeListBefore,
 	typename TArg,
-	typename... T1After,
+	typename TypeListAfter,
+	typename TypeList2Args>
+struct ComposedSharedParamFunctors;
+
+template <
+	typename TRet,
+	typename TShared,
+	typename... TBefore,
+	typename TArg,
+	typename... TAfter,
 	typename... T2Args>
-struct ComposedSharedParamFunctors : public Functor<TRet, TShared, T1Before...,  T2Args..., T1After...>
+struct ComposedSharedParamFunctors<
+	TRet,
+	TShared,
+	TypeList<TBefore...>,
+	TArg,
+	TypeList<TAfter...>,
+	TypeList<T2Args...> >
+: public Functor<TRet, TShared, TBefore..., T2Args..., TAfter...>
 {
-	value_ptr<Functor<TRet, TShared, TBefore..., UnwrapErrorOr<TArg>::TVal, TAfter...> > functor;
-	value_ptr<Functor<TArg, TShared, T2Args...> > functor_two;
+	valuable::value_ptr<Functor<TRet, TShared, TBefore..., typename UnwrapErrorOr<TArg>::TVal, TAfter...> > functor;
+	valuable::value_ptr<Functor<TArg, TShared, T2Args...> > functor_two;
+
+	static_assert((IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
+		|| !IsErrorOr<TArg>::value, "ComposedSharedParam functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
 
 	ComposedSharedParamFunctors(
-		Functor<TRet, TShared, TBefore..., UnwrapErrorOr<TArg>::TVal, TAfter...> functor,
+		Functor<TRet, TShared, TBefore..., typename UnwrapErrorOr<TArg>::TVal, TAfter...> functor,
 		Functor<TArg, TShared, T2Args...> functor_two)
 		: functor(functor)
 		, functor_two(functor_two)
@@ -105,19 +267,19 @@ struct ComposedSharedParamFunctors : public Functor<TRet, TShared, T1Before..., 
 	{
 		if constexpr (IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
 		{
-			auto value = CHECK_RETURN(functor_two(shared, two_args));
+			auto value = CHECK_RETURN(functor_two(shared, two_args...));
 			return functor(shared, before..., value, after...);
-		}
-		else if constexpr (IsErrorOr<TArg>::value)
-		{
-			static_assert(false, "ComposedSharedParam functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
 		}
 		else
 		{
-			return functor(shared, before..., functor_two(shared, two_args), after...);
+			return functor(
+				shared,
+				before...,
+				functor_two(shared, two_args...),
+				after...);
 		}
 	}
-}
+};
 
 template<typename TRet, typename ...TArgs>
 struct FunctionPointer : public Functor<TRet, TArgs...>
@@ -131,6 +293,11 @@ struct FunctionPointer : public Functor<TRet, TArgs...>
 	virtual TRet operator()(TArgs... args) override
 	{
 		return func(args...);
+	}
+
+	virtual Functor<TRet, TArgs...> * Clone() const override
+	{
+		return new FunctionPointer(*this);
 	}
 };
 

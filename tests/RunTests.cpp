@@ -7,6 +7,7 @@
 #include "./reflection/TestReflectWrappers.hpp"
 #include "./serialization/TestDeserialize.hpp"
 #include "./interface/TestUITree.hpp"
+#include "./utils/TestMapReduce.hpp"
 /*
 g++ -std=c++17 -Wfatal-errors RunTests.cpp -g && ./a.out;
 */
@@ -23,7 +24,8 @@ int main(void)
 		TestReflectContainers,
 		TestReflectWrappers,
 		TestDeserialize,
-		TestUITree>();
+		TestUITree,
+		TestMapReduce>();
 	
 	std::cout << "All Tests Passed" << std::endl;
 	if (success) return 0;

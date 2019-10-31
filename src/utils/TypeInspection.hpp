@@ -45,6 +45,36 @@ struct ExtractFunctionTypes<R(*)(C&)>
 	using Return = R;
 };
 
+// A template to hold a parameter pack
+template < typename... >
+struct TypeList {};
+
+template<typename A, typename B>
+struct TypeListUnion;
+
+template<typename... As, typename... Bs>
+struct TypeListUnion<TypeList<As...>, TypeList<Bs...> >
+{
+	using Types = TypeList<As..., Bs...>;
+};
+
+template<typename TNeedle, typename THay, typename...THaystack>
+struct SplitTypeList
+{
+	using Next = SplitTypeList<TNeedle, THaystack...>;
+
+	using Before = typename TypeListUnion<
+		TypeList<THay>,
+		typename Next::Before>::Types;
+	using After = typename Next::After;
+};
+
+template<typename TNeedle, typename...THaystack>
+struct SplitTypeList<TNeedle, TNeedle, THaystack...>
+{
+	using Before = TypeList<>;
+	using After = TypeList<THaystack...>;
+};
 
 } // namespace Farb
 

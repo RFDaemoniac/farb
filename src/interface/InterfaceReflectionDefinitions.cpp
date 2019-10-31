@@ -57,6 +57,7 @@ TypeInfo* UI::Dimensions::GetStaticTypeInfo()
 
 struct NineSliceConverter : public Functor<ErrorOr<std::vector<UI::Dimensions> >, const std::vector<int> & >
 {
+	using TFunctor = Functor<ErrorOr<std::vector<UI::Dimensions> >, const std::vector<int> & >;
 	virtual ErrorOr<std::vector<UI::Dimensions> > operator()(const std::vector<int> & in) override
 	{
 		if (in.size() != 4)
@@ -74,6 +75,11 @@ struct NineSliceConverter : public Functor<ErrorOr<std::vector<UI::Dimensions> >
 		ret[ML].y = in[2];
 		ret[BL].y = in[3];
 		return ret;
+	}
+
+	virtual TFunctor * Clone() const override
+	{
+		return new NineSliceConverter(*this);
 	}
 };
 

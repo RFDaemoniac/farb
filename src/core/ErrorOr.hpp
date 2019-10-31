@@ -117,8 +117,6 @@ public:
 		result.GetValue(); \
 	})
 
-} // namespace Farb
-
 // SFINAE type inspection
 template<typename TVal>
 struct IsErrorOr : std::false_type { };
@@ -130,22 +128,24 @@ template<typename T>
 struct UnwrapErrorOr
 {
 	using TVal = T;
-}
+};
 
 template<typename T>
 struct UnwrapErrorOr<ErrorOr<T> >
 {
 	using TVal = T;
-}
+};
 
 template<typename T>
-T ValueOrDefault(ErrorOr<T> result, T default)
+T ValueOrDefault(ErrorOr<T> result, T default_value)
 {
 	if (result.IsError())
 	{
-		return default;
+		return default_value;
 	}
 	return result.GetValue();
 }
+
+} // namespace Farb
 
 #endif // FARB_ERROR_OR_HPP
