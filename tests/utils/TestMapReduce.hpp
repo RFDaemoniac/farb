@@ -38,6 +38,17 @@ int bar(float f)
 	return -1;
 }
 
+bool duplicated(bool b, int i1, int i2, int i3)
+{
+	return b && i1 > 0 && i2 > 0 && i3 > 0;
+}
+
+int shared(char c)
+{
+	if (c > 0) return 1;
+	return -1;
+}
+
 class TestMapReduce : public ITest
 {
 public:
@@ -67,6 +78,31 @@ public:
 			farb_print(result, "composed functions with multiple arguments");
 			assert(result);
 
+		}
+
+		{
+			auto d = FunctionPointer(duplicated);
+
+			auto reduced = RemoveDuplicateParam<int>(d);
+
+			auto result = reduced(true, 1, 2);
+
+			farb_print(result, "copying value for duplicate param");
+			assert(result);
+		}
+
+		{
+			auto f = FunctionPointer(foo);
+			auto s = FunctionPointer(shared);
+
+			// we don't need to specify the shared param type here
+			// because it's assumed that it's the first argument for each
+			auto composed = ComposeWithSharedParam(f, s);
+
+			auto result = composed('a', true);
+
+			farb_print(result, "composing with duplicated param");
+			assert(result);
 		}
 
 		return true;

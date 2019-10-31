@@ -1,6 +1,8 @@
 #ifndef FARB_TYPE_INSPECTION_HPP
 #define FARB_TYPE_INSPECTION_HPP
 
+#include "ErrorOr.hpp"
+
 namespace Farb
 {
 
@@ -58,10 +60,13 @@ struct TypeListUnion<TypeList<As...>, TypeList<Bs...> >
 	using Types = TypeList<As..., Bs...>;
 };
 
+template<typename TNeedle, typename THaystack>
+struct SplitTypeList;
+
 template<typename TNeedle, typename THay, typename...THaystack>
-struct SplitTypeList
+struct SplitTypeList<TNeedle, TypeList<THay, THaystack...> >
 {
-	using Next = SplitTypeList<TNeedle, THaystack...>;
+	using Next = SplitTypeList<TNeedle, TypeList<THaystack...> >;
 
 	using Before = typename TypeListUnion<
 		TypeList<THay>,
@@ -70,11 +75,56 @@ struct SplitTypeList
 };
 
 template<typename TNeedle, typename...THaystack>
-struct SplitTypeList<TNeedle, TNeedle, THaystack...>
+struct SplitTypeList<TNeedle, TypeList<TNeedle, THaystack...> >
 {
 	using Before = TypeList<>;
 	using After = TypeList<THaystack...>;
 };
+
+template<typename TNeedle, typename THay, typename...THaystack>
+struct RemoveTypeFromTypeList
+{
+	using Next = RemoveTypeFromTypeList<TNeedle, THaystack...>;
+
+	using Remaining = typename TypeListUnion<
+		TypeList<THay>,
+		typename Next::Remaining>::Types;
+};
+
+template<typename TNeedle, typename...THaystack>
+struct RemoveTypeFromTypeList<TNeedle, TNeedle, THaystack...>
+{
+	using Remaining = TypeList<THaystack...>;
+};
+
+// SFINAE type inspection
+template<typename TVal>
+struct IsErrorOr : std::false_type { };
+
+template<typename TVal>
+struct IsErrorOr<ErrorOr<TVal> > : std::true_type { };
+
+template<typename T>
+struct UnwrapErrorOr
+{
+	using TVal = T;
+};
+
+template<typename T>
+struct UnwrapErrorOr<ErrorOr<T> >
+{
+	using TVal = T;
+};
+
+template<typename T>
+T ValueOrDefault(ErrorOr<T> result, T default_value)
+{
+	if (result.IsError())
+	{
+		return default_value;
+	}
+	return result.GetValue();
+}
 
 } // namespace Farb
 

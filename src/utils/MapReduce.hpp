@@ -75,74 +75,6 @@ struct CurriedFunctor<
 		return new CurriedFunctor(*this);
 	}
 };
-/*
-
-template<typename TRet, typename TArgsList, typename TArg, typename T2ArgsList>
-struct ComposedFunctors;
-
-template<typename... Args>
-void f1(const std::tuple<Args...>& t1) {
-    std::tuple<typename std::conditional<
-        std::is_same<A, Args>::value, B, Args>::type...> t2(t1);
-
-template<typename T>
-using replace_fn = std::conditional_t<std::is_same_v<From, T>, To, T>
-
-template<typename TRet, typename... TArgs, typename TArg, typename... T2Args>
-struct ComposedFunctors<TRet, std::tuple<TArgs...>, TArg, std::tuple<T2Args...> >
-: Functor<TRet, typename std::conditional<
-		std::is_same<TArg, TArgs>::value, T2Args..., TArgs>::type...>
-{
-
-	using TFunctor = Functor<TRet, TArgs...>;
-	using TFunctorTwo = Functor<TArg, T2Args...>;
-
-	using TResultingFunctor = Functor<TRet, typename std::conditional<
-		std::is_same<TArg, TArgs>::value, T2Args..., TArgs>::type...>;
-
-	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
-	valuable::value_ptr<TFunctorTwo, FunctorCloner<TFunctorTwo> > functor_two;
-
-	static_assert((IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
-		|| !IsErrorOr<TArg>::value, "Composed functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
-
-	// by convention assume that functions don't use ErrorOr as parameters
-	ComposedFunctors(
-		TFunctor & functor,
-		TFunctorTwo & functor_two)
-		: functor(functor)
-		, functor_two(functor_two)
-	{ }
-
-	virtual TRet operator()(TBefore... before, T2Args... two_args, TAfter... after) override
-	{
-		if constexpr (IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
-		{
-			auto value = CHECK_RETURN((*functor_two)(two_args...));
-			return (*functor)(before..., value, after...);
-		}
-		else
-		{
-			return (*functor)(before..., (*functor_two)(two_args...), after...);
-		}
-	}
-
-	virtual Functor<TRet, TBefore..., T2Args..., TAfter...> * Clone() const override
-	{
-		return new ComposedFunctors(*this);
-	}
-}
-
-
-template <class T, class... Args>
-struct remove_last<std::tuple<T, Args...>>
-{
-	using type = typename concat_tuple<
-		std::tuple<T>,
-		typename remove_last<std::tuple<Args...>>::type
-	>::type;
-};
-*/
 
 template<
 	typename TRet,
@@ -207,11 +139,13 @@ template<
 	typename ...TArgs,
 	typename TArg,
 	typename ...T2Args>
-auto Compose(
+inline auto Compose(
 	Functor<TRet, TArgs...> & functor,
 	Functor<TArg, T2Args...> & functor_two)
 {
-	using Split = SplitTypeList<TArg, TArgs...>;
+	using Split = SplitTypeList<
+		typename UnwrapErrorOr<TArg>::TVal,
+		TypeList<TArgs...> >;
 	return ComposedFunctors<
 		TRet,
 		typename Split::Before,
@@ -220,66 +154,97 @@ auto Compose(
 		TypeList<T2Args...> >(functor, functor_two);
 }
 
-// rmf note: I think I want another composed type for a shared parameter
-// where the value gets used in both, rather than duplicated as a param
+// only removes a single copy, the second one
+template<
+	typename TRet,
+	typename TDuplicate,
+	typename TListBefore,
+	typename TListBetween,
+	typename TListAfter>
+struct DuplicatedParamFunctor;
+
+template<
+	typename TRet,
+	typename TDuplicate,
+	typename... TBefore,
+	typename... TBetween,
+	typename... TAfter>
+struct DuplicatedParamFunctor<
+	TRet,
+	TDuplicate,
+	TypeList<TBefore...>,
+	TypeList<TBetween...>,
+	TypeList<TAfter...> >
+: public Functor<TRet, TBefore..., TDuplicate, TBetween..., TAfter...>
+{
+	using TFunctor = Functor<
+		TRet,
+		TBefore...,
+		TDuplicate,
+		TBetween...,
+		TDuplicate,
+		TAfter...>;
+
+	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
+
+	DuplicatedParamFunctor(TFunctor & functor)
+		: functor(functor)
+	{ }
+
+	virtual TRet operator()(
+		TBefore... before,
+		TDuplicate duplicate,
+		TBetween... between,
+		TAfter... after) override
+	{
+		return (*functor)(
+				before...,
+				duplicate,
+				between...,
+				duplicate,
+				after...);
+	}
+
+	virtual Functor<TRet, TBefore..., TDuplicate, TBetween..., TAfter...> * Clone() const override
+	{
+		return new DuplicatedParamFunctor(*this);
+	}
+};
+
+template<
+	typename TDuplicate,
+	typename TRet,
+	typename... TArgs>
+inline auto RemoveDuplicateParam(Functor<TRet, TArgs...> & functor)
+{
+	using SplitOne = SplitTypeList<TDuplicate, TypeList<TArgs...> >;
+	using SplitTwo = SplitTypeList<TDuplicate, typename SplitOne::After>;
+
+	return DuplicatedParamFunctor<
+		TRet,
+		TDuplicate,
+		typename SplitOne::Before,
+		typename SplitTwo::Before,
+		typename SplitTwo::After>(functor);
+}
+
 // to be used to generate an AST where each function also takes a context
 // this is quite complicated with befores and afters, lets assume the shared context
 // is the first parameter, for now
-template <
-	typename TRet,
+// and if it isn't, you can always call the body yourself
+template<
 	typename TShared,
-	typename TypeListBefore,
-	typename TArg,
-	typename TypeListAfter,
-	typename TypeList2Args>
-struct ComposedSharedParamFunctors;
-
-template <
 	typename TRet,
-	typename TShared,
-	typename... TBefore,
+	typename... T1Args,
 	typename TArg,
-	typename... TAfter,
 	typename... T2Args>
-struct ComposedSharedParamFunctors<
-	TRet,
-	TShared,
-	TypeList<TBefore...>,
-	TArg,
-	TypeList<TAfter...>,
-	TypeList<T2Args...> >
-: public Functor<TRet, TShared, TBefore..., T2Args..., TAfter...>
+inline auto ComposeWithSharedParam(
+	Functor<TRet, TShared, T1Args...> & f1,
+	Functor<TArg, TShared, T2Args...> & f2)
 {
-	valuable::value_ptr<Functor<TRet, TShared, TBefore..., typename UnwrapErrorOr<TArg>::TVal, TAfter...> > functor;
-	valuable::value_ptr<Functor<TArg, TShared, T2Args...> > functor_two;
-
-	static_assert((IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
-		|| !IsErrorOr<TArg>::value, "ComposedSharedParam functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
-
-	ComposedSharedParamFunctors(
-		Functor<TRet, TShared, TBefore..., typename UnwrapErrorOr<TArg>::TVal, TAfter...> functor,
-		Functor<TArg, TShared, T2Args...> functor_two)
-		: functor(functor)
-		, functor_two(functor_two)
-	{ }
-
-	virtual TRet operator()(TShared shared, TBefore... before, T2Args... two_args, TAfter... after) override
-	{
-		if constexpr (IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
-		{
-			auto value = CHECK_RETURN(functor_two(shared, two_args...));
-			return functor(shared, before..., value, after...);
-		}
-		else
-		{
-			return functor(
-				shared,
-				before...,
-				functor_two(shared, two_args...),
-				after...);
-		}
-	}
-};
+	auto composed = Compose(f1, f2);
+	return RemoveDuplicateParam<TShared>(composed);
+}
 
 template<typename TRet, typename ...TArgs>
 struct FunctionPointer : public Functor<TRet, TArgs...>
