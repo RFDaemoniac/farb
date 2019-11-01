@@ -30,6 +30,14 @@ struct Functor<void, TArgs...>
 	virtual ~Functor() { };
 };
 
+/*
+template<template <typename... Ts > typename TContainer>
+using TypeList_Functor = Functor<Ts...>;
+
+template<typename TRet, template <typename... TArgs > typename TContainer>
+using TypeList_Functor = Functor<TRet, TArgs...>;
+*/
+
 // for use by value_ptr
 template <typename T>
 struct FunctorCloner {
@@ -55,12 +63,12 @@ struct CurriedFunctor<
 	TypeList<TAfter...> >
 : public Functor<TRet, TBefore..., TAfter...>
 {
-	using TUncurriedFunctor = Functor<TRet, TBefore..., TArg, TAfter...>;
+	using TFunctor = Functor<TRet, TBefore..., TArg, TAfter...>;
 
-	valuable::value_ptr<TUncurriedFunctor, FunctorCloner<TUncurriedFunctor> > functor;
+	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
 	TArg value;
 
-	CurriedFunctor(TUncurriedFunctor & functor, TArg value)
+	CurriedFunctor(TFunctor & functor, TArg value)
 		: functor(functor)
 		, value(value)
 	{ }
@@ -76,12 +84,46 @@ struct CurriedFunctor<
 	}
 };
 
+/*
 template<
 	typename TRet,
-	typename TypeListBefore,
+	typename ...TArgs,
 	typename TArg,
-	typename TypeListAfter,
-	typename TypeList2Args> 
+	typename ...T2Args>
+struct ComposedFunctors
+: public TypeList_Functor<
+	TRet,
+	TypeListUnion<
+		SplitTypeList<TArg, TypeList<TArgs...> >::Before,
+		TypeList<T2Args...>
+		SplitTypeList<TArg, TypeList<TArgs...> >::After
+	>	
+>
+{
+	using Before = typename SplitTypeList<TArg, TypeList<TArgs...> >::Before;
+	using IndexBefore = std::make_index_sequence<Before>;
+}
+
+
+template<
+	typename TRet,
+	typename... TArgs,
+	typename TArg,
+	typename... T2Args>
+struct ComposedFunctors<
+	TRet,
+	typename SplitTypeList<TArg, TArgs>::Before,
+	TArg,
+	typename SPlitTypeList<TArg, TArgs>::After,
+	TypeList<T2Args...> >;
+*/
+
+template<
+	typename TRet,
+	typename TListBefore,
+	typename TArg,
+	typename TListAfter,
+	typename TList2Args> 
 struct ComposedFunctors;
 
 template<
@@ -229,9 +271,8 @@ inline auto RemoveDuplicateParam(Functor<TRet, TArgs...> & functor)
 }
 
 // to be used to generate an AST where each function also takes a context
-// this is quite complicated with befores and afters, lets assume the shared context
-// is the first parameter, for now
-// and if it isn't, you can always call the body yourself
+// it gets complicated with befores and afters, so lets assume the shared context
+// is the first parameter. if it's not, call RemoveDuplicateParam yourself
 template<
 	typename TShared,
 	typename TRet,

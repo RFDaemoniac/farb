@@ -48,9 +48,34 @@ struct ExtractFunctionTypes<R(*)(C&)>
 };
 
 // A template to hold a parameter pack
-template < typename... >
-struct TypeList {};
+template<typename... Ts>
+struct TypeList
+{
+	static constexpr std::size_t Count = sizeof...(Ts);
+};
 
+template<std::size_t NTarget, typename T, typename... Ts>
+struct GetNth
+{
+	using Type = typename GetNth<NTarget - 1, Ts...>::Type;
+};
+
+template<typename T, typename... Ts>
+struct GetNth<0, T, Ts...>
+{
+	using Type = T;
+};
+
+template <std::size_t N, typename TList>
+struct Nested_GetNth;
+
+template <std::size_t N, template<class...> class TContainer, class... Ts>
+struct Nested_GetNth<N, TContainer<Ts...> >
+{
+	using Type = GetNth<N, Ts...>;
+};
+
+/*
 template<typename A, typename B>
 struct TypeListUnion;
 
@@ -58,6 +83,26 @@ template<typename... As, typename... Bs>
 struct TypeListUnion<TypeList<As...>, TypeList<Bs...> >
 {
 	using Types = TypeList<As..., Bs...>;
+};
+*/
+
+template<typename... TLists>
+struct TypeListUnion;
+
+template<typename... Ts>
+struct TypeListUnion<TypeList<Ts...> >
+{
+	using Type = TypeList<Ts...>;
+};
+
+template<typename ... TAs, typename... TBs, typename ... TListsRemaining>
+struct TypeListUnion<TypeList<TAs...>, TypeList<TBs...>, TListsRemaining...>
+{
+	using Type =
+		typename TypeListUnion<
+			TypeList<TAs..., TBs...>,
+			TListsRemaining...
+		>::Type;
 };
 
 template<typename TNeedle, typename THaystack>
@@ -70,7 +115,7 @@ struct SplitTypeList<TNeedle, TypeList<THay, THaystack...> >
 
 	using Before = typename TypeListUnion<
 		TypeList<THay>,
-		typename Next::Before>::Types;
+		typename Next::Before>::Type;
 	using After = typename Next::After;
 };
 
@@ -88,7 +133,7 @@ struct RemoveTypeFromTypeList
 
 	using Remaining = typename TypeListUnion<
 		TypeList<THay>,
-		typename Next::Remaining>::Types;
+		typename Next::Remaining>::Type;
 };
 
 template<typename TNeedle, typename...THaystack>
