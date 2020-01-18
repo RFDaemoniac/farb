@@ -38,6 +38,47 @@ template<typename TRet, template <typename... TArgs > typename TContainer>
 using TypeList_Functor = Functor<TRet, TArgs...>;
 */
 
+template<typename TRet, typename ...TArgs>
+struct FunctionPointer : public Functor<TRet, TArgs...>
+{
+	TRet (*func)(TArgs...);
+
+	FunctionPointer(TRet (*func)(TArgs...))
+		:func(func)
+	{ }
+
+	virtual TRet operator()(TArgs... args) override
+	{
+		return func(args...);
+	}
+
+	virtual Functor<TRet, TArgs...> * Clone() const override
+	{
+		return new FunctionPointer(*this);
+	}
+};
+
+
+// this lets you convert t.member(params) to func(t, params)
+// what I'm really interested in is the other direction
+// could use another operator (-> or | )
+// see example at http://pfultz2.com/blog/2014/09/05/pipable-functions/
+template <typename TRet, typename T, typename ...TArgs>
+struct MemberFunction : public Functor<TRet, T&, TArgs...>
+{
+	TRet (T::*func)(TArgs...);
+
+	MemberFunction(TRet (T::*func)(TArgs...))
+		: func(func)
+	{ }
+
+	virtual TRet operator()(T& t, TArgs... args) override
+	{
+		return t.*func(args...);
+	}
+};
+
+
 // for use by value_ptr
 template <typename T>
 struct FunctorCloner {
@@ -287,45 +328,30 @@ inline auto ComposeWithSharedParam(
 	return RemoveDuplicateParam<TShared>(composed);
 }
 
-template<typename TRet, typename ...TArgs>
-struct FunctionPointer : public Functor<TRet, TArgs...>
+template<typename TValue>
+TValue Identity(TValue value)
 {
-	TRet (*func)(TArgs...);
+	return value;
+}
 
-	FunctionPointer(TRet (*func)(TArgs...))
-		:func(func)
-	{ }
-
-	virtual TRet operator()(TArgs... args) override
-	{
-		return func(args...);
-	}
-
-	virtual Functor<TRet, TArgs...> * Clone() const override
-	{
-		return new FunctionPointer(*this);
-	}
-};
-
-
-// this lets you convert t.member(params) to func(t, params)
-// what I'm really interested in is the other direction
-// could use another operator (-> or | )
-// see example at http://pfultz2.com/blog/2014/09/05/pipable-functions/
-template <typename TRet, typename T, typename ...TArgs>
-struct MemberFunction : public Functor<TRet, T&, TArgs...>
+template<typename TValue>
+auto IdentityFunctor(TValue value)
 {
-	TRet (T::*func)(TArgs...);
+	return CurriedFunctor{FunctionPointer{Identity<TValue>}, value};
+}
 
-	MemberFunction(TRet (T::*func)(TArgs...))
-		: func(func)
-	{ }
-
-	virtual TRet operator()(T& t, TArgs... args) override
+template<typename... TRemainder, typename TValue, typename ... TRest>
+Functor<TRemainder> Curry(Functor<TRemainder..., TValue, TRest...> & functor, TValue value, TRest... rest)
+{
+	if constexpr (sizeof...(TRest) == 0 )
 	{
-		return t.*func(args...);
+		return CurriedFunctor{functor, value};
 	}
-};
+	else
+	{
+		return Curry(CurriedFunctor{functor, value}, rest);
+	}
+}
 
 
 // rmf todo: how to specify partial specialization for containers?

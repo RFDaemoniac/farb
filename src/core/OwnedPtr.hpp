@@ -12,7 +12,25 @@ template<typename T>
 struct OwnedPtr
 {
 	T * value;
-	
+
+	OwnedPtr(T * value)
+		: value(value)
+	{ }
+
+	OwnedPtr(OwnedPtr&& other)
+		: value(other.value)
+	{
+		other.value = nullptr;
+	}
+
+	~OwnedPtr()
+	{
+		if (value != nullptr)
+		{
+			delete value;
+			value = nullptr;
+		}
+	}
 }
 
 } // namespace Farb
