@@ -2,6 +2,8 @@
 #define FARB_BUILTIN_TYPEDEFS_H
 
 #include "../../lib/valuable/value_ptr.hpp"
+#include <unordered_set>
+#include <unordered_map>
 
 namespace Farb
 {
@@ -28,6 +30,12 @@ using CRef = std::reference_wrapper<const T>;
 
 template<typename T>
 using Ref = std::reference_wrapper<T>;
+
+template<typename T>
+using Set = std::unordered_set<T>;
+
+template<typename TKey, typename TVal>
+using Table = std::unordered_map<TKey, TVal>;
 
 } // namespace Farb
 

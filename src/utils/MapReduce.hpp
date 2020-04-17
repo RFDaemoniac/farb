@@ -10,6 +10,40 @@
 namespace Farb
 {
 
+template<int N, typename... Ts> using NthTypeOf =
+	typename std::tuple_element<N, std::tuple<Ts...>>::type;
+
+/*
+struct BoxedFunctorInterface
+{
+	virtual ~BoxedFunctorInterface() { };
+
+	virtual int ParameterCount();
+};
+
+template<typename TRet, typename ...TArgs>
+struct BoxedFunctor : BoxedFunctorInterface
+{
+	Functor<TRet, TArgs...> * functor
+
+	~BoxedFunctor()
+	{
+		destroy(functor)
+	};
+
+	int ParameterCount()
+	{
+		return sizeof...(Ts);
+	}
+
+	template<int N>
+	std::type_info ParameterType()
+	{
+		return typeid(NthTypeOf<N, TArgs...>)
+	}
+};
+*/
+
 template<typename TRet, typename ...TArgs>
 struct Functor
 {
@@ -341,7 +375,7 @@ auto IdentityFunctor(TValue value)
 }
 
 template<typename... TRemainder, typename TValue, typename ... TRest>
-Functor<TRemainder> Curry(Functor<TRemainder..., TValue, TRest...> & functor, TValue value, TRest... rest)
+Functor<TRemainder...> Curry(Functor<TRemainder..., TValue, TRest...> & functor, TValue value, TRest... rest)
 {
 	if constexpr (sizeof...(TRest) == 0 )
 	{
@@ -349,7 +383,7 @@ Functor<TRemainder> Curry(Functor<TRemainder..., TValue, TRest...> & functor, TV
 	}
 	else
 	{
-		return Curry(CurriedFunctor{functor, value}, rest);
+		return Curry(CurriedFunctor{functor, value}, rest...);
 	}
 }
 

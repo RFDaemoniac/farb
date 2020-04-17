@@ -31,6 +31,16 @@ struct OwnedPtr
 			value = nullptr;
 		}
 	}
+
+	operator ==(std::nullptr_t nullp)
+	{
+		return value == nullptr;
+	}
+
+	operator !=(std::nullptr_t nullp)
+	{
+		return value != nullptr;
+	}
 }
 
 } // namespace Farb
