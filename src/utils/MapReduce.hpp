@@ -6,6 +6,7 @@
 
 #include "ErrorOr.hpp"
 #include "TypeInspection.hpp"
+#include "BuiltinTypedefs.h"
 
 namespace Farb
 {
@@ -51,7 +52,7 @@ struct Functor
 
 	virtual TRet operator()(TArgs... args) = 0;
 
-	virtual Functor * Clone() const = 0;
+	virtual Functor * clone() const = 0;
 };
 
 template<typename ...TArgs>
@@ -59,7 +60,7 @@ struct Functor<void, TArgs...>
 {
 	virtual void operator()(TArgs... args) = 0;
 
-	virtual Functor * Clone() const = 0;
+	virtual Functor * clone() const = 0;
 
 	virtual ~Functor() { };
 };
@@ -86,7 +87,7 @@ struct FunctionPointer : public Functor<TRet, TArgs...>
 		return func(args...);
 	}
 
-	virtual Functor<TRet, TArgs...> * Clone() const override
+	virtual Functor<TRet, TArgs...> * clone() const override
 	{
 		return new FunctionPointer(*this);
 	}
@@ -113,13 +114,6 @@ struct MemberFunction : public Functor<TRet, T&, TArgs...>
 };
 
 
-// for use by value_ptr
-template <typename T>
-struct FunctorCloner {
-	FunctorCloner() = default;
-	T *operator()(T const &x) const { return x.Clone(); }
-};
-
 // Declaration first to support multiple parameter packs
 // this doesn't need to have inheritence information
 template<
@@ -140,11 +134,11 @@ struct CurriedFunctor<
 {
 	using TFunctor = Functor<TRet, TBefore..., TArg, TAfter...>;
 
-	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
+	value_ptr<TFunctor> functor;
 	TArg value;
 
 	CurriedFunctor(TFunctor & functor, TArg value)
-		: functor(functor)
+		: functor(&functor)
 		, value(value)
 	{ }
 
@@ -153,7 +147,7 @@ struct CurriedFunctor<
 		return (*functor)(before..., value, after...);
 	}
 
-	virtual Functor<TRet, TBefore..., TAfter...> * Clone() const override
+	virtual Functor<TRet, TBefore..., TAfter...> * clone() const override
 	{
 		return new CurriedFunctor(*this);
 	}
@@ -218,8 +212,8 @@ struct ComposedFunctors<
 	using TFunctor = Functor<TRet, TBefore..., typename UnwrapErrorOr<TArg>::TVal, TAfter...>;
 	using TFunctorTwo = Functor<TArg, T2Args...>;
 
-	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
-	valuable::value_ptr<TFunctorTwo, FunctorCloner<TFunctorTwo> > functor_two;
+	value_ptr<TFunctor> functor;
+	value_ptr<TFunctorTwo> functor_two;
 
 	static_assert((IsErrorOr<TRet>::value && IsErrorOr<TArg>::value)
 		|| !IsErrorOr<TArg>::value, "Composed functor_two returns an ErrorOr but the functor does not, therefore we don't know how to pass through the error. Maybe consider wrapping functor_two in a default lambda");
@@ -228,8 +222,8 @@ struct ComposedFunctors<
 	ComposedFunctors(
 		TFunctor & functor,
 		TFunctorTwo & functor_two)
-		: functor(functor)
-		, functor_two(functor_two)
+		: functor(&functor)
+		, functor_two(&functor_two)
 	{ }
 
 	virtual TRet operator()(TBefore... before, T2Args... two_args, TAfter... after) override
@@ -245,7 +239,7 @@ struct ComposedFunctors<
 		}
 	}
 
-	virtual Functor<TRet, TBefore..., T2Args..., TAfter...> * Clone() const override
+	virtual Functor<TRet, TBefore..., T2Args..., TAfter...> * clone() const override
 	{
 		return new ComposedFunctors(*this);
 	}
@@ -302,10 +296,10 @@ struct DuplicatedParamFunctor<
 		TDuplicate,
 		TAfter...>;
 
-	valuable::value_ptr<TFunctor, FunctorCloner<TFunctor> > functor;
+	value_ptr<TFunctor> functor;
 
 	DuplicatedParamFunctor(TFunctor & functor)
-		: functor(functor)
+		: functor(&functor)
 	{ }
 
 	virtual TRet operator()(
@@ -322,7 +316,7 @@ struct DuplicatedParamFunctor<
 				after...);
 	}
 
-	virtual Functor<TRet, TBefore..., TDuplicate, TBetween..., TAfter...> * Clone() const override
+	virtual Functor<TRet, TBefore..., TDuplicate, TBetween..., TAfter...> * clone() const override
 	{
 		return new DuplicatedParamFunctor(*this);
 	}

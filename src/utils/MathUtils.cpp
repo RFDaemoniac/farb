@@ -10,7 +10,7 @@ double RadiusOfCircleWithArea(double area)
 
 std::pair<bool, double> DistanceBetweenPointAndSegment(Point2D<double> p, Point2D<double> a, Point2D<double> b)
 {
-	auto result = DistanceBetweenPointAndSegmentSquared(p, a, b)
+	auto result = DistanceBetweenPointAndSegmentSquared(p, a, b);
 	return {result.first, std::sqrt(result.second)};
 }
 
@@ -41,7 +41,7 @@ std::pair<bool, double> DistanceBetweenPointAndSegmentSquared(Point2D<double> p,
 
 	Point2D<double> intersection = a + (b - a) * u;
 
-	return {true, (p - intersection.MagnitudeSquared())};
+	return {true, (p - intersection).MagnitudeSquared()};
 }
 
 PointDistributionGenerator::PointDistributionGenerator(double x_center, double y_center)
@@ -61,11 +61,9 @@ FibonacciSpiralPointGenerator::FibonacciSpiralPointGenerator(
 	double x_center,
 	double y_center)
 	: PointDistributionGenerator(x_center, y_center)
-	: radius_expansion(RadiusOfCircleWithArea(area)
+	, radius_expansion(RadiusOfCircleWithArea(area)
 		/ std::sqrt((double)num_points)
 		* radius_fudge_factor)
-	, x_center(x_center)
-	, y_center(y_center)
 	, index(0)
 { }
 
@@ -132,7 +130,7 @@ void GridPointGenerator::GetNext(double & x, double & y)
 	}
 }
 
-RandomPointGenerator::RandomGenerator(double max_dimension, double x_center, double y_center)
+RandomPointGenerator::RandomPointGenerator(double max_dimension, double x_center, double y_center)
 	: PointDistributionGenerator(x_center, y_center)
 	, rd()
 	, gen(rd())

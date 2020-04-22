@@ -77,7 +77,7 @@ struct NineSliceConverter : public Functor<ErrorOr<std::vector<UI::Dimensions> >
 		return ret;
 	}
 
-	virtual TFunctor * Clone() const override
+	virtual TFunctor * clone() const override
 	{
 		return new NineSliceConverter(*this);
 	}
