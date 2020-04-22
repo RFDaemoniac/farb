@@ -1,14 +1,14 @@
 #ifndef FARB_BUILTIN_TYPEDEFS_H
 #define FARB_BUILTIN_TYPEDEFS_H
 
-#include "../../lib/valuable/value_ptr.hpp"
+#include "../../lib/value_ptr/value_ptr.hpp"
 #include <unordered_set>
 #include <unordered_map>
 
 namespace Farb
 {
 
-// rmf todo: @implement HString or another pooled string option
+// rmf todo: @Implement HString or another pooled string option
 // ideally one that allows for a constexpr constructor
 // and move it out of BuiltinTypedefs
 // we could maybe implement this as a pointer to char array with a length,
@@ -23,7 +23,7 @@ using byte = unsigned char;
 
 // not actually a builtin but treated as such
 template<typename T>
-using value_ptr = valuable::value_ptr<T>;
+using value_ptr = smart_ptr::value_ptr<T>;
 
 template<typename T>
 using CRef = std::reference_wrapper<const T>;
