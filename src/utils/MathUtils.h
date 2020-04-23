@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <type_traits>
 
 namespace Farb
 {
@@ -23,27 +24,27 @@ struct Point2D
 		, y(y)
 	{ }
 
-	Point2D operator - (const Point2D & other)
+	Point2D operator - (const Point2D & other) const
 	{
 		return Point2D{x - other.x, y - other.y};
 	}
 
-	Point2D operator * (T multiplier)
+	Point2D operator * (T multiplier) const
 	{
 		return Point2D{x * multiplier, y * multiplier};
 	}
 
-	Point2D operator + (const Point2D & other)
+	Point2D operator + (const Point2D & other) const
 	{
 		return Point2D{x + other.x, y + other.y};
 	}
 
-	Point2D operator / (const int divisor)
+	Point2D operator / (const int divisor) const
 	{
 		return Point2D{x / divisor, y / divisor};
 	}
 
-	T Dot(const Point2D & other)
+	T Dot(const Point2D & other) const
 	{
 		return x * other.x + y * other.y;
 	}
@@ -61,7 +62,20 @@ struct Point2D
 	template<typename Other>
 	Point2D<Other> Cast()
 	{
-		return Point2D<Other>{static_cast<Other>(x), static_cast<Other>(y)};
+		if constexpr(std::is_integral<Other>::value && !std::is_integral<T>::value)
+		{
+			return Point2D<Other>{
+				static_cast<Other>(std::nearbyint(x)),
+				static_cast<Other>(std::nearbyint(y))
+			};
+		}
+		else
+		{
+			return Point2D<Other>{
+				static_cast<Other>(x),
+				static_cast<Other>(y)
+			};
+		}
 	}
 };
 
@@ -79,7 +93,7 @@ struct PointDistributionGenerator
 
 	PointDistributionGenerator(double x_center, double y_center);
 
-	virtual void GetNext(double & x, double & y);
+	virtual Point2D<double> GetNext();
 };
 
 struct FibonacciSpiralPointGenerator : PointDistributionGenerator
@@ -96,7 +110,7 @@ struct FibonacciSpiralPointGenerator : PointDistributionGenerator
 		double x_center,
 		double y_center);
 
-	void GetNext(double & x, double & y) override;
+	Point2D<double> GetNext() override;
 };
 
 struct GridPointGenerator : PointDistributionGenerator
@@ -112,7 +126,7 @@ struct GridPointGenerator : PointDistributionGenerator
 
 	GridPointGenerator(int num_points, double area, double x_center, double y_center);
 
-	void GetNext(double & x, double & y) override;
+	Point2D<double> GetNext() override;
 };
 
 struct RandomPointGenerator : PointDistributionGenerator
@@ -124,7 +138,7 @@ struct RandomPointGenerator : PointDistributionGenerator
 
 	RandomPointGenerator(double max_dimension, double x_center, double y_center);
 
-	void GetNext(double & x, double & y) override;
+	Point2D<double> GetNext() override;
 };
 
 } // namespace Farb

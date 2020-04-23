@@ -49,10 +49,9 @@ PointDistributionGenerator::PointDistributionGenerator(double x_center, double y
 	, y_center(y_center)
 { }
 
-void PointDistributionGenerator::GetNext(double & x, double & y)
+Point2D<double> PointDistributionGenerator::GetNext()
 {
-	x = x_center;
-	y = y_center;
+	return {x_center, y_center};
 }
 
 FibonacciSpiralPointGenerator::FibonacciSpiralPointGenerator(
@@ -67,15 +66,17 @@ FibonacciSpiralPointGenerator::FibonacciSpiralPointGenerator(
 	, index(0)
 { }
 
-void FibonacciSpiralPointGenerator::GetNext(double & x, double & y)
+Point2D<double> FibonacciSpiralPointGenerator::GetNext()
 {
 	const double radius = std::sqrt((double)index) * radius_expansion;
 	const double angle = GoldenAngle * (double) index;
 
-	x = x_center + std::cos(angle) * radius;
-	y = y_center + std::sin(angle) * radius;
+	double x = x_center + std::cos(angle) * radius;
+	double y = y_center + std::sin(angle) * radius;
 
 	index++;
+
+	return {x, y};
 }
 
 GridPointGenerator::GridPointGenerator(int num_points, double area, double x_center, double y_center)
@@ -87,10 +88,10 @@ GridPointGenerator::GridPointGenerator(int num_points, double area, double x_cen
 	, y_grid(0)
 { }
 
-void GridPointGenerator::GetNext(double & x, double & y)
+Point2D<double> GridPointGenerator::GetNext()
 {
-	x = x_grid * separation;
-	y = y_grid * separation;
+	double x = x_grid * separation;
+	double y = y_grid * separation;
 
 	switch(leg)
 	{
@@ -128,6 +129,7 @@ void GridPointGenerator::GetNext(double & x, double & y)
 			}
 			break;
 	}
+	return {x, y};
 }
 
 RandomPointGenerator::RandomPointGenerator(double max_dimension, double x_center, double y_center)
@@ -140,10 +142,9 @@ RandomPointGenerator::RandomPointGenerator(double max_dimension, double x_center
 
 }
 
-void RandomPointGenerator::GetNext(double & x, double & y)
+Point2D<double> RandomPointGenerator::GetNext()
 {
-	x = x_range(gen);
-	y = y_range(gen);
+	return {static_cast<double>(x_range(gen)), static_cast<double>(y_range(gen))};
 }
 
 } // namespace Farb
