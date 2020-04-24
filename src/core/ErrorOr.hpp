@@ -4,7 +4,7 @@
 #include <memory>
 #include <type_traits>
 
-#include "Error.hpp"
+#include "../../src/core/Error.hpp"
 
 namespace Farb
 {
@@ -77,14 +77,28 @@ public:
 		{
 			return *this;
 		}
-		isError = other.isError;
+		if (isError != other.isError)
+		{
+			if (isError)
+			{
+				(&error)->Error::~Error();
+			}
+			else
+			{
+				(&value)->T::~T();
+			}
+			isError = other.isError;
+		}
 		if (isError)
 		{
-			error = std::move(other.error);
+			// we are calling an in place new
+			// so that we don't try to reassign a garbage error.parent pointer
+			// causing a free on random memory
+			new (&error) Error(other.error);
 		}
 		else
 		{
-			value = other.value;
+			new (&value) T(other.value);
 		}
 		return *this;
 	}
@@ -109,12 +123,12 @@ public:
 
 #define CHECK_RETURN(functionCall) \
 	({ \
-		auto result = functionCall; \
-		if (result.IsError()) \
+		auto erroror_internal_result = functionCall; \
+		if (erroror_internal_result.IsError()) \
 		{ \
-			return result.GetError(); \
+			return erroror_internal_result.GetError(); \
 		} \
-		result.GetValue(); \
+		erroror_internal_result.GetValue(); \
 	})
 
 } // namespace Farb
