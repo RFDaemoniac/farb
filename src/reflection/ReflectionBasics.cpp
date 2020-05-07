@@ -77,7 +77,7 @@ template <>
 TypeInfo* GetTypeInfo<unsigned char>()
 {
 	static auto ucharTypeInfo = TypeInfoCustomLeaf<unsigned char>::Construct(
-		"char",
+		"uchar",
 		nullptr,
 		HString("uint"), static_cast<bool (*)(unsigned char&, uint)>([](unsigned char& object, uint value)
 		{

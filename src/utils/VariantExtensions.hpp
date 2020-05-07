@@ -6,6 +6,7 @@
 namespace Farb
 {
 
+// TTo must be a variant with all of the expected arguments
 template <typename TFrom, typename TTo>
 TTo VariantCast(TFrom&& v)
 {
@@ -16,6 +17,7 @@ TTo VariantCast(TFrom&& v)
 		},
 		v);
 }
+
 
 } // namespace Farb
 
