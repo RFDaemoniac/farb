@@ -38,6 +38,36 @@ inline bool Intersecting(std::unordered_set<T> a, std::unordered_set<T> b)
 	return !Disjoint(a, b);
 }
 
+template<typename T>
+inline bool SuperSet(std::unordered_set<T> a, std::unordered_set<T> b)
+{
+	if (a.size() < b.size())
+	{
+		return false;
+	}
+	for (auto && value : b)
+	{
+		if (!a.contains(value))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template<typename TContainer, typename TType>
+inline bool Contains(const TContainer & container, const TType & value)
+{
+	if constexpr(std::is_same<TContainer, std::vector<TType>>::value)
+	{
+		return std::find(container.begin(), container.end(), value) != container.end();
+	}
+	else
+	{
+		return container.count(value) > 0;
+	}
+}
+
 } // namespace Farb
 
 #endif // FARB_CONTAINER_EXTENSIONS_HPP

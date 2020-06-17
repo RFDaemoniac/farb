@@ -13,6 +13,12 @@ namespace Farb
 namespace UI
 {
 
+unsigned char DiffAndClampChannel(unsigned char initial, int diff);
+
+int DiffSquared(TPixel a, TPixel b);
+
+TPixel Tinted(TPixel base, TPixel tint, float alpha);
+
 struct TigrDeleter
 {
 	void operator()(Tigr* bmp) { if (bmp != nullptr) tigrFree(bmp); }

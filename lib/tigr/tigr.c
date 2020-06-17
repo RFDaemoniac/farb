@@ -2750,6 +2750,33 @@ int tigrKeyHeld(Tigr *bmp, int key)
 	return win->keys[k];
 }
 
+// rmf addition
+void tigrGetKeyChanges(Tigr* bmp,
+	char (* down_values)[256], int * down_count,
+	char (* up_values)[256], int * up_count)
+{
+	*down_count = 0;
+	*up_count = 0;
+	TigrInternal *win;
+	if (GetFocus() != bmp->handle)
+		return;
+	win = tigrInternal(bmp);
+	for (int key = 0; key < 256; key++)
+	{
+		int k = tigrWinVK(key);
+		if (win->keys[k] && !win->prev[k])
+		{
+			(*down_values)[*down_count] = key;
+			(*down_count)++;
+		}
+		else if (!win->keys[k] && win->prev[k])
+		{
+			(*up_values)[*up_count] = key;
+			(*up_count)++;
+		}
+	}
+}
+
 int tigrReadChar(Tigr *bmp)
 {
 	TigrInternal *win = tigrInternal(bmp);
@@ -3622,6 +3649,33 @@ int tigrKeyHeld(Tigr *bmp, int key)
 		return 0;
 	win = tigrInternal(bmp);
 	return win->keys[key];
+}
+
+// rmf addition
+void tigrGetKeyChanges(Tigr* bmp,
+	char (* down_values)[256], int * down_count,
+	char (* up_values)[256], int * up_count)
+{
+	*down_count = 0;
+	*up_count = 0;
+	TigrInternal *win;
+	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
+	if(keyWindow != bmp->handle)
+		return;
+	win = tigrInternal(bmp);
+	for (int key = 0; key < 256; key++)
+	{
+		if (win->keys[key] && !win->prev[key])
+		{
+			(*down_values)[*down_count] = key;
+			(*down_count)++;
+		}
+		else if (!win->keys[key] && win->prev[key])
+		{
+			(*up_values)[*up_count] = key;
+			(*up_count)++;
+		}
+	}
 }
 
 int tigrReadChar(Tigr *bmp)

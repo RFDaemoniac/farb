@@ -14,6 +14,12 @@ namespace Farb
 template<int N, typename... Ts> using NthTypeOf =
 	typename std::tuple_element<N, std::tuple<Ts...>>::type;
 
+template<typename Test, template<typename...> class Ref>
+struct IsSpecialization : std::false_type {};
+
+template<template<typename...> class Ref, typename... Args>
+struct IsSpecialization<Ref<Args...>, Ref>: std::true_type {};
+
 /*
 struct BoxedFunctorInterface
 {
