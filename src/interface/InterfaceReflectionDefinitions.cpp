@@ -4,7 +4,7 @@
 
 #include "UINode.h"
 #include "Fonts.hpp"
-#include "Window.h"
+#include "UIWindow.h"
 #include "InputHandler.hpp"
 #include "TigrExtensions.h"
 #include "ReflectionDeclare.h"

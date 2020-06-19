@@ -17,15 +17,14 @@ constexpr int Pow(int a, uint b)
 
 constexpr int Round(float f)
 {
-	float approx = s.value * settings.speed.value;
 	int value = 0;
-	if (approx < 0.0)
+	if (f < 0.0)
 	{
-		value = static_cast<int>(approx - 0.5f);
+		value = static_cast<int>(f - 0.5f);
 	}
 	else
 	{
-		value = static_cast<int>(approx + 0.5f);
+		value = static_cast<int>(f + 0.5f);
 	}
 	return value;
 }

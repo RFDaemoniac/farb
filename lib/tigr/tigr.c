@@ -2752,8 +2752,8 @@ int tigrKeyHeld(Tigr *bmp, int key)
 
 // rmf addition
 void tigrGetKeyChanges(Tigr* bmp,
-	char (* down_values)[256], int * down_count,
-	char (* up_values)[256], int * up_count)
+	char (* down_values)[256], unsigned int * down_count,
+	char (* up_values)[256], unsigned int * up_count)
 {
 	*down_count = 0;
 	*up_count = 0;
@@ -3653,8 +3653,8 @@ int tigrKeyHeld(Tigr *bmp, int key)
 
 // rmf addition
 void tigrGetKeyChanges(Tigr* bmp,
-	char (* down_values)[256], int * down_count,
-	char (* up_values)[256], int * up_count)
+	char (* down_values)[256], unsigned int * down_count,
+	char (* up_values)[256], unsigned int * up_count)
 {
 	*down_count = 0;
 	*up_count = 0;

@@ -13,6 +13,14 @@ namespace Farb
 namespace UI
 {
 
+inline int Pack(const TPixel & p)
+{
+	return (static_cast<int>(p.b) << 24)
+		| (static_cast<int>(p.g) << 16)
+		| (static_cast<int>(p.r) << 8)
+		| (static_cast<int>(p.a) << 0);
+};
+
 unsigned char DiffAndClampChannel(unsigned char initial, int diff);
 
 int DiffSquared(TPixel a, TPixel b);

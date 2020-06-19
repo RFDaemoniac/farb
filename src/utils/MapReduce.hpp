@@ -394,9 +394,9 @@ Functor<TRemainder...> Curry(Functor<TRemainder..., TValue, TRest...> & functor,
 // maybe inference can just catch all this?
 // type inference probably can't catch a return value...
 template<template<typename, typename...> typename TContainer, typename TIn, typename TOut, typename ... TInArgs>
-TContainer<TOut, TInArgs...> Map(
+TContainer<TOut, TInArgs...> MapApply(
 	const TContainer<TIn, TInArgs...>& in,
-	Functor<TOut, const TIn &> & map)
+	Functor<TOut, const TIn &> & func)
 {
 	TContainer<TOut, TInArgs...> result{in.size()};
 	for (const auto & val : in)
@@ -404,7 +404,7 @@ TContainer<TOut, TInArgs...> Map(
 		// rmf todo: which function to use here?
 		// could we access by iterators in parallel?
 		// could just pass in the function...
-		result.push_back(map(val));
+		result.push_back(func(val));
 	}
 }
 

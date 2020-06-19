@@ -35,6 +35,9 @@ template<typename T>
 using Set = std::unordered_set<T>;
 
 template<typename TKey, typename TVal>
+using Map = std::unordered_map<TKey, TVal>;
+
+template<typename TKey, typename TVal>
 using Table = std::unordered_map<TKey, TVal>;
 
 } // namespace Farb

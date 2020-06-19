@@ -188,8 +188,8 @@ int tigrKeyHeld(Tigr *bmp, int key);
 
 // rmf addition, extracts differences between keys and previous keys
 void tigrGetKeyChanges(Tigr* bmp,
-	char (* down_values)[256], int * down_count,
-	char (* up_values)[256], int * up_count);
+	char (* down_values)[256], unsigned int * down_count,
+	char (* up_values)[256], unsigned int * up_count);
 
 // Reads character input for a window.
 // Returns the Unicode value of the last key pressed, or 0 if none.

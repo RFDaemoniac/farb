@@ -3,7 +3,7 @@
 #include <limits>
 #include <set>
 
-#include "Window.h"
+#include "UIWindow.h"
 #include "ReflectionDeclare.h"
 #include "ReflectionContainers.hpp" // for ToString(Tree<Dimensions>)
 
@@ -13,13 +13,13 @@ namespace Farb
 namespace UI
 {
 
-Window::Window(int width, int height, std::string name)
+UIWindow::UIWindow(int width, int height, std::string name)
 	: window(nullptr)
 {
 	window.reset(tigrWindow(width, height, name.c_str(), TIGR_3X));
 }
 
-bool Window::Render(const Node& tree)
+bool UIWindow::Render(const Node& tree)
 {
 	tigrClear(window.get(), tigrRGB(0,0,0));
 	Dimensions root{ 0, 0, window->w, window->h };
@@ -57,7 +57,7 @@ ErrorOr<int> ComputeScalar(int windowSize, int parentSize, const Scalar& scalar)
 }
 
 // Dimensions x and y are relative to the parent x and y
-ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
+ErrorOr<Tree<Dimensions> > UIWindow::ComputeDimensions(
 	const Dimensions& window,
 	const Dimensions& parent,
 	const Node& node)
@@ -353,7 +353,7 @@ ErrorOr<Tree<Dimensions> > Window::ComputeDimensions(
 }
 
 
-ErrorOr<Success> Window::Render(
+ErrorOr<Success> UIWindow::Render(
 	int parentAbsoluteX,
 	int parentAbsoluteY,
 	const Tree<Dimensions>& dimensions,

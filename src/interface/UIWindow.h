@@ -13,11 +13,11 @@ namespace Farb
 namespace UI
 {
 
-struct Window
+struct UIWindow
 {
 	std::unique_ptr<Tigr, TigrDeleter> window;
 
-	Window(int width, int height, std::string name);
+	UIWindow(int width, int height, std::string name);
 
 	bool Render(const Node& tree);
 
