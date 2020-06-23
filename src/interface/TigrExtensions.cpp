@@ -11,43 +11,6 @@ namespace Farb
 namespace UI
 {
 
-unsigned char DiffAndClampChannel(unsigned char initial, int diff)
-{
-	int value = static_cast<int>(initial) + diff;
-	if (value < 0) value = 0;
-	if (value > 255) value = 255;
-	return static_cast<unsigned char>(value);
-};
-
-int DiffSquared(TPixel a, TPixel b)
-{
-	auto Channel_Diff_Squared = [&](unsigned char TPixel::* p)
-	{
-		int diff = static_cast<int>(a.*p)
-			- static_cast<int>(b.*p);
-		return diff * diff;
-	};
-	return Channel_Diff_Squared(&TPixel::b)
-		+ Channel_Diff_Squared(&TPixel::g)
-		+ Channel_Diff_Squared(&TPixel::r);
-}
-
-TPixel Tinted(TPixel base, TPixel tint, float alpha)
-{
-	auto Lerp = [](unsigned char one, unsigned char two, float alpha)
-	{
-		int a = static_cast<int>(one);
-		int b = static_cast<int>(two);
-		return static_cast<unsigned char>(a + ((a-b)*alpha));
-	};
-	return TPixel {
-		Lerp(base.b, tint.b, alpha),
-		Lerp(base.g, tint.g, alpha),
-		Lerp(base.r, tint.r, alpha),
-		base.a
-	};
-}
-
 Dimensions Image::GetDestinationForSlice(
 	const Dimensions& destTotal,
 	NineSliceLocations::Enum location) const

@@ -2,6 +2,8 @@ CXX=g++
 CXXFLAGS=-std=c++17 -Wall -pedantic -Wfatal-errors -Wno-gnu-statement-expression -Wno-unused-function
 TARGET_LINKS=-framework OpenGL -framework Cocoa
 
+CFLAGS=-Wno-deprecated-declarations
+
 # MODULES = $(sort $(dir $(wildcard src/*/)))
 MODULES = core interface reflection serialization utils
 VPATH = tests/ src/ $(addprefix tests/, $(MODULES)) $(addprefix src/, $(MODULES))
@@ -22,7 +24,8 @@ TEST_HEADERS = $(wildcard tests/*/*.h*)
 all: build/bin/runtests build/link/farb.a
 
 debug: CXXFLAGS += -DDebug -g
-debug: build/bin/runtests
+debug: CFLAGS += -DDebug -g
+debug: build/bin/runtests build/link/farb.a
 
 farb: build/link/farb.a
 
@@ -32,7 +35,7 @@ tests: build/bin/runtests
 lib: build/tmp/tigr.o
 
 build/tmp/tigr.o: lib/tigr/tigr.c lib/tigr/tigr.h
-	gcc -c -o build/tmp/tigr.o lib/tigr/tigr.c -Wno-deprecated-declarations
+	gcc ${CFLAGS} -c -o build/tmp/tigr.o lib/tigr/tigr.c 
 
 build/tmp/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(SOURCE_INCLUDES) -c $< -o $@

@@ -3065,8 +3065,8 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	} else {
 		// See how big we can make it and still fit on-screen.
 		CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
-		int maxW = CGRectGetHeight(mainMonitor) * 3/4;
-		int maxH = CGRectGetWidth(mainMonitor) * 3/4;
+		int maxW = CGRectGetWidth(mainMonitor) * 4/5;
+		int maxH = CGRectGetHeight(mainMonitor) * 4/5;
 		scale = tigrCalcScale(w, h, maxW, maxH);
 	}
 

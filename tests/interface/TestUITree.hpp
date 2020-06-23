@@ -6,7 +6,7 @@
 #include "../RegisterTest.hpp"
 #include "../../src/reflection/ReflectionDeclare.h"
 #include "../../src/interface/UINode.h"
-#include "../../src/interface/Window.h"
+#include "../../src/interface/UIWindow.h"
 #include "../../lib/tigr/tigr.h"
 #include "../../src/serialization/Deserialization.h"
 
@@ -34,7 +34,7 @@ public:
 		farb_print(success, "deserialize UI Tree");
 		assert(success);
 
-		Window window{160, 90, "Test Window"};
+		UIWindow window{160, 90, "Test Window"};
 		Node empty;
 		float elapsedTime = 0.0f;
 		while (elapsedTime < windowDuration)
