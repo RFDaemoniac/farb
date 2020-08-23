@@ -1,6 +1,8 @@
 #ifndef FARB_TYPE_INSPECTION_HPP
 #define FARB_TYPE_INSPECTION_HPP
 
+#include <tuple>
+
 #include "ErrorOr.hpp"
 
 namespace Farb
@@ -170,6 +172,27 @@ T ValueOrDefault(ErrorOr<T> result, T default_value)
 	}
 	return result.GetValue();
 }
+
+template<int N, typename... Ts> using NthTypeOf =
+	typename std::tuple_element<N, std::tuple<Ts...>>::type;
+
+template<typename Test, template<typename...> class Ref>
+struct IsSpecialization : std::false_type {};
+
+template<template<typename...> class Ref, typename... Args>
+struct IsSpecialization<Ref<Args...>, Ref>: std::true_type {};
+
+template<typename Test, template<typename...> class Ref>
+struct Unwrap
+{
+	using TVal = Test;
+};
+
+template<template<typename...> class Ref, typename... Args>
+struct Unwrap<Ref<Args...>, Ref >
+{
+	using TVal = GetNth<0, Args...>;
+};
 
 } // namespace Farb
 

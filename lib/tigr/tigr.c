@@ -16,17 +16,14 @@
 // Creates a new bitmap, with extra payload bytes.
 Tigr *tigrBitmap2(int w, int h, int extra);
 
-// Resizes an existing bitmap.
-void tigrResize(Tigr *bmp, int w, int h);
-
 // Calculates the biggest scale that a bitmap can fit into an area at.
-int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH);
+int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH, int flags);
 
 // Calculates a new scale, taking minimum-scale flags into account.
 int tigrEnforceScale(int scale, int flags);
 
 // Calculates the correct position for a bitmap to fit into a window.
-void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
+void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int flags, int out[4]);
 
 // ----------------------------------------------------------
 #ifdef _WIN32
@@ -170,7 +167,7 @@ void tigrResize(Tigr *bmp, int w, int h)
 	bmp->h = h;
 }
 
-int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH)
+int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH, int flags)
 {
 	// We want it as big as possible in the window, but still
 	// maintaining the correct aspect ratio, and always
@@ -185,7 +182,14 @@ int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH)
 			break;
 		}
 	}
-	return (scale > 1) ? scale : 1;
+	scale = (scale > 1) ? scale : 1;
+	if (flags & TIGR_FARB_OVERSCALE_DOWNSIZE
+		&& (bmpW * scale < areaW
+			|| bmpH * scale < areaH))
+	{
+		scale++;
+	}
+	return scale;
 }
 
 int tigrEnforceScale(int scale, int flags)
@@ -196,13 +200,30 @@ int tigrEnforceScale(int scale, int flags)
 	return scale;
 }
 
-void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4])
+void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int flags, int out[4])
 {
+	int render_w = bmp->w*scale;
+	int render_h = bmp->h*scale;
+
+	// TIGR_FARB_OVERSCALE_DOWNSIZE applied here
+	if (flags & TIGR_FARB_OVERSCALE_DOWNSIZE)
+	{
+		float w_ratio = (float) windowW / (float)render_w;
+		float h_ratio = (float) windowH / (float)render_h;
+		float ratio = w_ratio;
+		if (h_ratio < w_ratio)
+		{
+			ratio = h_ratio;
+		}
+		render_w *= ratio;
+		render_h *= ratio;
+	}
+
 	// Center the image on screen at this scale.
-	out[0] = (windowW - bmp->w*scale) / 2;
-	out[1] = (windowH - bmp->h*scale) / 2;
-	out[2] = out[0] + bmp->w*scale;
-	out[3] = out[1] + bmp->h*scale;
+	out[0] = (windowW - render_w) / 2;
+	out[1] = (windowH - render_h) / 2;
+	out[2] = out[0] + render_w;
+	out[3] = out[1] + render_h;
 }
 
 void tigrClear(Tigr *bmp, TPixel color)
@@ -2018,8 +2039,10 @@ void tigrGAPIPresent(Tigr *bmp, int dw, int dh)
 		consts[5] = (float)bmp->h;
 		consts[6] = 1.0f / bmp->w;
 		consts[7] = 1.0f / bmp->h;
-		consts[8] = win->hblur ? 1.0f : 0.0f;
-		consts[9] = win->vblur ? 1.0f : 0.0f;
+		consts[8] = 1.0f;
+		consts[9] = 1.0f;
+		// consts[8] = win->hblur ? 1.0f : 0.0f;
+		// consts[9] = win->vblur ? 1.0f : 0.0f;
 		consts[10] = win->scanlines;
 		consts[11] = win->contrast;
 		IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0, consts, 3);
@@ -2279,7 +2302,7 @@ void tigrDxUpdateWidgets(Tigr *bmp, int dw, int dh)
 		SendMessage((HWND)bmp->handle, WM_CLOSE, 0, 0);
 }
 
-void tigrUpdate(Tigr *bmp)
+TSize tigrUpdate(Tigr *bmp)
 {
 	MSG msg;
 	RECT rc;
@@ -2314,6 +2337,7 @@ void tigrUpdate(Tigr *bmp)
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+	return TSize{dw, dh};
 }
 
 static BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle)
@@ -2411,9 +2435,9 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				{
 					tigrResize(bmp, dw/win->scale, dh/win->scale);
 				} else {
-					win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
+					win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh, win->flags), win->flags);
 				}
-				tigrPosition(bmp, win->scale, dw, dh, win->pos);
+				tigrPosition(bmp, win->scale, dw, dh, win->flags, win->pos);
 				tigrGAPIResize(bmp, dw, dh);
 			}
 
@@ -2526,7 +2550,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 		// See how big we can make it and still fit on-screen.
 		maxW = GetSystemMetrics(SM_CXSCREEN) * 3/4;
 		maxH = GetSystemMetrics(SM_CYSCREEN) * 3/4;
-		scale = tigrCalcScale(w, h, maxW, maxH);
+		scale = tigrCalcScale(w, h, maxW, maxH, flags);
 	}
 
 	scale = tigrEnforceScale(scale, flags);
@@ -3067,7 +3091,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 		CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
 		int maxW = CGRectGetWidth(mainMonitor) * 4/5;
 		int maxH = CGRectGetHeight(mainMonitor) * 4/5;
-		scale = tigrCalcScale(w, h, maxW, maxH);
+		scale = tigrCalcScale(w, h, maxW, maxH, flags);
 	}
 
 	scale = tigrEnforceScale(scale, flags);
@@ -3175,7 +3199,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->gl.gl_legacy = 0;
 	win->mouseButtons = 0;
 
-	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
+	tigrPosition(bmp, win->scale, bmp->w, bmp->h, flags, win->pos);
 
 	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 	tigrGAPICreate(bmp);
@@ -3547,7 +3571,7 @@ void _tigrOnCocoaEvent(id event, id window)
 	objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), event);
 }
 
-void tigrUpdate(Tigr *bmp)
+TSize tigrUpdate(Tigr *bmp)
 {
 	TigrInternal *win;
 	id openGLContext;
@@ -3577,12 +3601,14 @@ void tigrUpdate(Tigr *bmp)
 	if (win->flags & TIGR_AUTO)
 		tigrResize(bmp, windowSize.width / win->scale, windowSize.height / win->scale);
 	else
-		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, windowSize.width, windowSize.height), win->flags);
+		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, windowSize.width, windowSize.height, win->flags), win->flags);
 
-	tigrPosition(bmp, win->scale, windowSize.width, windowSize.height, win->pos);
+	tigrPosition(bmp, win->scale, windowSize.width, windowSize.height, win->flags, win->pos);
 	tigrGAPIResize(bmp, windowSize.width, windowSize.height);
 	tigrGAPIPresent(bmp, windowSize.width, windowSize.height);
 	objc_msgSend_void(openGLContext, sel_registerName("flushBuffer"));
+
+	return TSize{windowSize.width, windowSize.height};
 }
 
 int tigrClosed(Tigr *bmp)

@@ -50,6 +50,7 @@ typedef struct {
 #define TIGR_3X			4	// always enforce (at least) 3X pixel scale
 #define TIGR_4X			8	// always enforce (at least) 4X pixel scale
 #define TIGR_RETINA		16	// enable retina support on OS X
+#define TIGR_FARB_OVERSCALE_DOWNSIZE	32	// overscale bigger than window, then linear interpolate down
 
 // A Tigr bitmap.
 typedef struct Tigr {
@@ -64,6 +65,9 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags);
 // Creates an empty off-screen bitmap.
 Tigr *tigrBitmap(int w, int h);
 
+// Resizes an existing bitmap.
+void tigrResize(Tigr *bmp, int w, int h);
+
 // Deletes a window/bitmap.
 void tigrFree(Tigr *bmp);
 
@@ -71,7 +75,10 @@ void tigrFree(Tigr *bmp);
 int tigrClosed(Tigr *bmp);
 
 // Displays a window's contents on-screen.
-void tigrUpdate(Tigr *bmp);
+typedef struct TSize {
+	int w, h;
+} TSize;
+TSize tigrUpdate(Tigr *bmp);
 
 // Sets post-FX properties for a window.
 // hblur/vblur = whether to use bilinear filtering along that axis (boolean)

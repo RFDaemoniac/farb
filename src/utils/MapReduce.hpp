@@ -11,15 +11,6 @@
 namespace Farb
 {
 
-template<int N, typename... Ts> using NthTypeOf =
-	typename std::tuple_element<N, std::tuple<Ts...>>::type;
-
-template<typename Test, template<typename...> class Ref>
-struct IsSpecialization : std::false_type {};
-
-template<template<typename...> class Ref, typename... Args>
-struct IsSpecialization<Ref<Args...>, Ref>: std::true_type {};
-
 /*
 struct BoxedFunctorInterface
 {
@@ -115,7 +106,12 @@ struct MemberFunction : public Functor<TRet, T&, TArgs...>
 
 	virtual TRet operator()(T& t, TArgs... args) override
 	{
-		return t.*func(args...);
+		return (t.*func)(args...);
+	}
+
+	virtual Functor<TRet, T&, TArgs...> * clone() const override
+	{
+		return new MemberFunction(*this);
 	}
 };
 
@@ -143,8 +139,8 @@ struct CurriedFunctor<
 	value_ptr<TFunctor> functor;
 	TArg value;
 
-	CurriedFunctor(TFunctor & functor, TArg value)
-		: functor(&functor)
+	CurriedFunctor(value_ptr<TFunctor> && functor, TArg value)
+		: functor(functor)
 		, value(value)
 	{ }
 
@@ -158,6 +154,29 @@ struct CurriedFunctor<
 		return new CurriedFunctor(*this);
 	}
 };
+
+
+// CurriedMember
+/* new CurriedFunctor{
+	new MemberFunction{
+		func
+	}, t
+};
+*/
+
+template<typename TRet, typename T, typename ... TArgs>
+CurriedFunctor<TRet, TypeList<>, T &, TypeList<TArgs...> > * MakeCurriedMember(
+	TRet (T::*func)(TArgs...),
+	T & t)
+{
+	MemberFunction< TRet, T, TArgs...> member { func };
+	return new CurriedFunctor<TRet, TypeList<>, T&, TypeList<TArgs...> > {
+		value_ptr<Functor<TRet, T&, TArgs...> > {
+			new MemberFunction< TRet, T, TArgs...> { func }
+		},
+		t
+	};
+}
 
 /*
 template<
