@@ -121,6 +121,9 @@ public:
 	}
 };
 
+// this is a gcc extension that is also present in clang but not msvc
+// it allows for multiple statements in a single expression
+// and evaluates to the last one
 #define CHECK_RETURN(functionCall) \
 	({ \
 		auto erroror_internal_result = functionCall; \

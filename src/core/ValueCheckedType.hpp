@@ -13,7 +13,7 @@ namespace Farb
 /*
 struct ValueCheckedTypeTag
 {
-	static Bool IsValid(const T& value);
+	static bool IsValid(const T& value);
 
 	static HString GetName();
 };
@@ -22,14 +22,12 @@ struct ValueCheckedTypeTag
 template<typename T, typename Tag>
 struct ValueCheckedType
 {
-	/* rmf todo: why doesn't this work?
 	static_assert(
-		std::is_same<decltype(Tag::IsValid), bool(*)(const T&)>::value,
+		std::is_same<decltype(Tag::IsValid), bool (const T&)>::value,
 		"ValueCheckedType Tag must have function static Bool IsValid(const T& value)");
 	static_assert(
-		std::is_same<decltype(Tag::GetName), HString(*)()>::value,
+		std::is_same<decltype(Tag::GetName), HString ()>::value,
 		"ValueCheckedType Tag must have function static HString GetName");
-	*/
 
 private:	
 	T value;
